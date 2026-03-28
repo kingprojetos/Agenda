@@ -16,7 +16,6 @@ body {
   background: linear-gradient(135deg,#1a73e8,#6ea8fe);
 }
 
-/* LOGIN BONITO */
 .login-box {
   max-width:320px;
   margin:100px auto;
@@ -25,10 +24,6 @@ body {
   border-radius:20px;
   box-shadow:0 10px 30px rgba(0,0,0,0.2);
   text-align:center;
-}
-
-.login-box h2 {
-  margin-bottom:20px;
 }
 
 .login-box input {
@@ -42,7 +37,6 @@ body {
 .login-box button {
   width:100%;
   padding:12px;
-  margin-top:10px;
   border:none;
   border-radius:12px;
   background: linear-gradient(135deg,#1a73e8,#4dabf7);
@@ -50,7 +44,6 @@ body {
   font-weight:bold;
 }
 
-/* APP */
 .container {
   background:#f5f7fb;
   min-height:100vh;
@@ -89,7 +82,6 @@ body {
   padding:4px;
   border-radius:6px;
   font-size:11px;
-  cursor:grab;
 }
 
 .modal {
@@ -102,7 +94,6 @@ body {
   border-radius:12px;
   box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
-
 </style>
 </head>
 
@@ -115,9 +106,12 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https:/
 import { getFirestore, collection, addDoc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
+  apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
   authDomain: "agenda-6b09e.firebaseapp.com",
-  projectId: "agenda-6b09e"
+  projectId: "agenda-6b09e",
+  storageBucket: "agenda-6b09e.firebasestorage.app",
+  messagingSenderId: "848846524028",
+  appId: "1:848846524028:web:2fdc1fba17859d79edc3f9"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -125,9 +119,8 @@ window.auth = getAuth(app);
 window.db = getFirestore(app);
 window.api = { signInWithEmailAndPassword, addDoc, collection, query, onSnapshot, where, onAuthStateChanged };
 
-// 🔔 PEDIR PERMISSÃO NOTIFICAÇÃO
+// 🔔 pedir permissão
 Notification.requestPermission();
-
 </script>
 
 <script type="text/babel">
@@ -191,7 +184,10 @@ return(
 <h2>Agenda PRO</h2>
 <input placeholder="Email" onChange={e=>setEmail(e.target.value)}/>
 <input type="password" placeholder="Senha" onChange={e=>setSenha(e.target.value)}/>
-<button onClick={()=>window.api.signInWithEmailAndPassword(window.auth,email,senha)}>
+<button onClick={() =>
+  window.api.signInWithEmailAndPassword(window.auth,email,senha)
+  .catch(e => alert("Erro: " + e.message))
+}>
 Entrar
 </button>
 </div>
@@ -245,7 +241,7 @@ key={i}>
 
 {modal && (
 <div className="modal">
-<h4>Novo</h4>
+<h4>Novo Agendamento</h4>
 <input placeholder="Cliente" onChange={e=>setForm({...form,cliente:e.target.value})}/>
 <button onClick={salvar}>Salvar</button>
 <button onClick={()=>setModal(false)}>Fechar</button>
