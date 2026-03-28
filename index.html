@@ -1,181 +1,254 @@
-<!DOCTYPE html><html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agenda PRO+ FINAL</title><script src="https://unpkg.com/react@18/umd/react.production.min.js"></script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script><style>
-body { font-family: Arial; background:#f5f7fb; }
-.container { max-width:900px; margin:auto; }
-.grid { display:grid; grid-template-columns:80px repeat(7,1fr); }
-.hour, .cell { border:1px solid #ddd; height:70px; }
-.hour { display:flex; align-items:center; justify-content:center; }
-.cell { position:relative; transition:0.2s; }
-.cell:hover { background:#eef4ff; }
+<title>Agenda PRO</title>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+body {
+  margin:0;
+  font-family: Arial;
+  background: linear-gradient(135deg,#1a73e8,#6ea8fe);
+}
+
+/* LOGIN BONITO */
+.login-box {
+  max-width:320px;
+  margin:100px auto;
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  text-align:center;
+}
+
+.login-box h2 {
+  margin-bottom:20px;
+}
+
+.login-box input {
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:10px;
+  border:1px solid #ddd;
+}
+
+.login-box button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background: linear-gradient(135deg,#1a73e8,#4dabf7);
+  color:white;
+  font-weight:bold;
+}
+
+/* APP */
+.container {
+  background:#f5f7fb;
+  min-height:100vh;
+  padding:10px;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:60px repeat(7,1fr);
+}
+
+.hour,.cell {
+  border:1px solid #ddd;
+  height:60px;
+}
+
+.hour {
+  font-size:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.cell {
+  position:relative;
+}
+
+.cell:hover {
+  background:#eef4ff;
+}
 
 .event {
   position:absolute;
-  background: linear-gradient(135deg, #1a73e8, #6ea8fe);
-  color: white;
-  padding: 6px;
-  border-radius: 8px;
-  font-size: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  transition: 0.2s;
+  background: linear-gradient(135deg,#1a73e8,#6ea8fe);
+  color:white;
+  padding:4px;
+  border-radius:6px;
+  font-size:11px;
   cursor:grab;
 }
-.event:active { transform: scale(0.95); }
 
 .modal {
   position:fixed;
-  top:50%; left:50%;
+  top:50%;
+  left:50%;
   transform:translate(-50%,-50%);
-  background:#fff;
+  background:white;
   padding:20px;
   border-radius:12px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.2);
-  animation: fadeIn 0.3s ease;
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
 
-@keyframes fadeIn {
-  from { opacity:0; transform:translate(-50%,-40%); }
-  to { opacity:1; transform:translate(-50%,-50%); }
-}
+</style>
+</head>
 
-button {
-  background: linear-gradient(135deg, #1a73e8, #4dabf7);
-  border:none;
-  color:white;
-  padding:10px;
-  border-radius:12px;
-  font-weight:bold;
-  margin-top:5px;
-}
-button:active { transform: scale(0.97); }
-</style></head>
 <body>
-<div id="root"></div><script type="module">
+<div id="root"></div>
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, updateDoc, doc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
-authDomain: "agenda-6b09e.firebaseapp.com",
-projectId: "agenda-6b09e"
+  apiKey: "SUA_API_KEY",
+  authDomain: "agenda-6b09e.firebaseapp.com",
+  projectId: "agenda-6b09e"
 };
 
 const app = initializeApp(firebaseConfig);
 window.auth = getAuth(app);
 window.db = getFirestore(app);
-window.api = { signInWithEmailAndPassword, addDoc, updateDoc, doc, collection, query, onSnapshot, where };
+window.api = { signInWithEmailAndPassword, addDoc, collection, query, onSnapshot, where, onAuthStateChanged };
 
-// NOTIFICAÇÃO REAL
-const messaging = getMessaging(app);
-Notification.requestPermission().then(permission => {
-  if (permission === "granted") {
-    getToken(messaging, {
-      vapidKey: "BOfTK-vxWs1SzlgOMeppPtocUyBlET_dPZ837vBYoZfLhLnJ_sMSkNnlI1V0ySfTwYAsEAU4dTbwNmp_akV1wHY"
-    }).then(token => {
-      console.log("TOKEN:", token);
-    });
+// 🔔 PEDIR PERMISSÃO NOTIFICAÇÃO
+Notification.requestPermission();
+
+</script>
+
+<script type="text/babel">
+
+function agendarNotificacao(data, cliente){
+  const agora = new Date();
+  const horario = new Date(data);
+
+  const tempo = horario - agora - (30*60*1000);
+
+  if(tempo > 0){
+    setTimeout(()=>{
+      if(Notification.permission==="granted"){
+        new Notification("Lembrete",{
+          body:`${cliente} em 30 minutos`
+        });
+      }
+    }, tempo);
   }
-});
-</script><script type="text/babel">
+}
+
 function App(){
+
 const [user,setUser]=React.useState(null);
+const [email,setEmail]=React.useState("");
+const [senha,setSenha]=React.useState("");
 const [agenda,setAgenda]=React.useState([]);
-const [modal,setModal]=React.useState(null);
+const [modal,setModal]=React.useState(false);
 const [form,setForm]=React.useState({cliente:"",data:""});
 
 React.useEffect(()=>{
-window.auth.onAuthStateChanged(u=>{
-setUser(u);
-if(u){
-const q=window.api.query(window.api.collection(window.db,"agendamentos"),window.api.where("userId","==",u.uid));
-window.api.onSnapshot(q,snap=>{
-setAgenda(snap.docs.map(d=>({id:d.id,...d.data()})));
-});
-}
+window.api.onAuthStateChanged(window.auth,(u)=>{
+  setUser(u);
+  if(u){
+    const q = window.api.query(
+      window.api.collection(window.db,"agendamentos"),
+      window.api.where("userId","==",u.uid)
+    );
+
+    window.api.onSnapshot(q,(snap)=>{
+      setAgenda(snap.docs.map(d=>({...d.data(),id:d.id})));
+    });
+  }
 });
 },[]);
 
-const salvar=async()=>{
+const salvar = async ()=>{
 await window.api.addDoc(window.api.collection(window.db,"agendamentos"),{
-...form,userId:user.uid
+  ...form,
+  userId:user.uid
 });
-setModal(null);
-}
 
-const onDragStart=(e,id)=>{
-e.dataTransfer.setData("id",id);
-}
+agendarNotificacao(form.data, form.cliente);
 
-const onDrop=async(e,dia,hora)=>{
-const id=e.dataTransfer.getData("id");
-const novaData=new Date(dia);
-novaData.setHours(hora);
-await window.api.updateDoc(window.api.doc(window.db,"agendamentos",id),{data:novaData});
+setModal(false);
 }
-
-const horas=[...Array(12)].map((_,i)=>i+8);
-const dias=[...Array(7)].map((_,i)=>{
-const d=new Date(); d.setDate(d.getDate()+i); return d;
-});
 
 if(!user){
 return(
-<div className="container">
-<h2>Login</h2>
-<input placeholder="Email" />
-<input type="password" placeholder="Senha" />
-<button>Entrar</button>
+<div className="login-box">
+<h2>Agenda PRO</h2>
+<input placeholder="Email" onChange={e=>setEmail(e.target.value)}/>
+<input type="password" placeholder="Senha" onChange={e=>setSenha(e.target.value)}/>
+<button onClick={()=>window.api.signInWithEmailAndPassword(window.auth,email,senha)}>
+Entrar
+</button>
 </div>
-)}
+)
+}
+
+const horas=[8,9,10,11,12,13,14,15,16,17,18];
+const dias=[...Array(7)].map((_,i)=>{
+let d=new Date();
+d.setDate(d.getDate()+i);
+return d;
+});
 
 return(
 <div className="container">
-<h2>Agenda PRO+</h2>
+
+<h3>Agenda</h3>
 
 <div className="grid">
+
 <div></div>
-{dias.map((d,i)=>(<div key={i} className="hour">{d.toLocaleDateString()}</div>))}
+{dias.map((d,i)=><div key={i} className="hour">{d.toLocaleDateString()}</div>)}
 
 {horas.map(h=>(
 <>
 <div className="hour">{h}:00</div>
+
 {dias.map((d,i)=>{
 const eventos=agenda.filter(a=>{
-const dt=new Date(a.data);
+let dt=new Date(a.data);
 return dt.getHours()===h && dt.getDate()===d.getDate();
 });
+
 return(
 <div className="cell"
- onClick={()=>{setModal(true); setForm({data:new Date(d.setHours(h)).toISOString()})}}
- onDragOver={e=>e.preventDefault()}
- onDrop={e=>onDrop(e,d,h)}
- key={i}>
+onClick={()=>{setModal(true); setForm({data:new Date(d.setHours(h)).toISOString()})}}
+key={i}>
 
 {eventos.map(e=>(
-<div draggable
-onDragStart={ev=>onDragStart(ev,e.id)}
-className="event">
-{e.cliente}
-</div>
+<div className="event">{e.cliente}</div>
 ))}
 
 </div>
 )
 })}
+
 </>
 ))}
+
 </div>
 
 {modal && (
 <div className="modal">
-<h3>Novo Agendamento</h3>
+<h4>Novo</h4>
 <input placeholder="Cliente" onChange={e=>setForm({...form,cliente:e.target.value})}/>
 <button onClick={salvar}>Salvar</button>
-<button onClick={()=>setModal(null)}>Fechar</button>
+<button onClick={()=>setModal(false)}>Fechar</button>
 </div>
 )}
 
@@ -184,5 +257,8 @@ className="event">
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script></body>
+
+</script>
+
+</body>
 </html>
