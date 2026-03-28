@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Agenda</title>
+    <title>Minha Agenda Profissional</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
-        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #1a73e8; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2 { text-align: center; color: #1a73e8; }
         input { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .secondary { background: #5f6368; }
-        .loading { text-align: center; padding: 50px; font-size: 18px; color: #666; }
+        .btn-out { background: #5f6368; margin-top: 20px; }
+        .item { background: #fff; border: 1px solid #eee; padding: 15px; margin-top: 10px; border-radius: 10px; border-left: 5px solid #1a73e8; }
+        .price { font-weight: bold; color: #28a745; }
     </style>
 </head>
 <body>
-    <div id="root"><div class="loading">Conectando ao sistema...</div></div>
-
+    <div id="root"></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
@@ -35,12 +35,9 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Tornando o Auth acessível para o React
-        window.auth = auth;
-        window.signIn = signInWithEmailAndPassword;
-        window.signUp = createUserWithEmailAndPassword;
+        window.auth = getAuth(app);
+        window.db = getFirestore(app);
+        window.api = { signInWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where };
     </script>
 
     <script type="text/babel">
@@ -48,49 +45,54 @@
             const [user, setUser] = React.useState(null);
             const [email, setEmail] = React.useState("");
             const [senha, setSenha] = React.useState("");
-            const [carregando, setCarregando] = React.useState(true);
+            const [agenda, setAgenda] = React.useState([]);
+            const [cliente, setCliente] = React.useState("");
+            const [servico, setServico] = React.useState("");
+            const [valor, setValor] = React.useState("");
 
             React.useEffect(() => {
-                const unsubscribe = window.auth.onAuthStateChanged((u) => {
+                const unsubAuth = window.auth.onAuthStateChanged((u) => {
                     setUser(u);
-                    setCarregando(false);
+                    if (u) {
+                        const q = window.api.query(window.api.collection(window.db, "agendamentos"), window.api.where("userId", "==", u.uid));
+                        window.api.onSnapshot(q, (snapshot) => {
+                            setAgenda(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                        });
+                    }
                 });
-                return () => unsubscribe();
             }, []);
 
-            const handleLogin = () => {
-                window.signIn(window.auth, email, senha).catch(err => alert("Erro: " + err.message));
+            const salvar = async () => {
+                if (!cliente || !servico || !valor) return alert("Preencha tudo!");
+                await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
+                    cliente, servico, valor, userId: user.uid, data: new Date().toLocaleString()
+                });
+                setCliente(""); setServico(""); setValor("");
             };
 
-            const handleCadastro = () => {
-                window.signUp(window.auth, email, senha).then(() => alert("Conta criada!")).catch(err => alert("Erro: " + err.message));
-            };
-
-            if (carregando) return <div class="loading">Iniciando agenda...</div>;
-
-            if (!user) {
-                return (
-                    <div className="container">
-                        <h1>Minha Agenda</h1>
-                        <input type="email" placeholder="Seu e-mail" onChange={e => setEmail(e.target.value)} />
-                        <input type="password" placeholder="Sua senha" onChange={e => setSenha(e.target.value)} />
-                        <button onClick={handleLogin}>ENTRAR</button>
-                        <button onClick={handleCadastro} className="secondary">CRIAR CONTA GRATIS</button>
-                    </div>
-                );
-            }
+            if (!user) return (
+                <div className="container">
+                    <h1>Acesso Restrito</h1>
+                    <input type="email" placeholder="E-mail" onChange={e => setEmail(e.target.value)} />
+                    <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
+                    <button onClick={() => window.api.signInWithEmailAndPassword(window.auth, email, senha).catch(e => alert("Acesso negado"))}>ENTRAR</button>
+                </div>
+            );
 
             return (
                 <div className="container">
-                    <h1>Bem-vindo!</h1>
-                    <p>Você entrou com: <b>{user.email}</b></p>
-                    <button onClick={() => window.auth.signOut()} className="secondary">SAIR</button>
+                    <h2>Nova Reserva</h2>
+                    <input placeholder="Cliente" value={cliente} onChange={e => setCliente(e.target.value)} />
+                    <input placeholder="Serviço" value={servico} onChange={e => setServico(e.target.value)} />
+                    <input placeholder="Valor (R$)" type="number" value={valor} onChange={e => setValor(e.target.value)} />
+                    <button onClick={salvar}>SALVAR</button>
+                    <h2 style={{marginTop: '20px'}}>Meus Dados</h2>
+                    {agenda.map(i => <div key={i.id} className="item"><p><b>{i.cliente}</b> - {i.servico}</p><p className="price">R$ {i.valor}</p></div>)}
+                    <button onClick={() => window.auth.signOut()} className="btn-out">SAIR</button>
                 </div>
             );
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
