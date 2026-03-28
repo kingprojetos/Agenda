@@ -8,15 +8,55 @@ body { font-family: Arial; background:#f5f7fb; }
 .grid { display:grid; grid-template-columns:80px repeat(7,1fr); }
 .hour, .cell { border:1px solid #ddd; height:70px; }
 .hour { display:flex; align-items:center; justify-content:center; }
-.cell { position:relative; }
-.event { position:absolute; background:#1a73e8; color:#fff; padding:5px; border-radius:5px; cursor:grab; font-size:12px; }
-.modal { position:fixed; top:30%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; box-shadow:0 5px 20px rgba(0,0,0,0.2); }
+.cell { position:relative; transition:0.2s; }
+.cell:hover { background:#eef4ff; }
+
+.event {
+  position:absolute;
+  background: linear-gradient(135deg, #1a73e8, #6ea8fe);
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  transition: 0.2s;
+  cursor:grab;
+}
+.event:active { transform: scale(0.95); }
+
+.modal {
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 5px 20px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity:0; transform:translate(-50%,-40%); }
+  to { opacity:1; transform:translate(-50%,-50%); }
+}
+
+button {
+  background: linear-gradient(135deg, #1a73e8, #4dabf7);
+  border:none;
+  color:white;
+  padding:10px;
+  border-radius:12px;
+  font-weight:bold;
+  margin-top:5px;
+}
+button:active { transform: scale(0.97); }
 </style></head>
 <body>
 <div id="root"></div><script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, updateDoc, doc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
 const firebaseConfig = {
 apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
@@ -28,6 +68,18 @@ const app = initializeApp(firebaseConfig);
 window.auth = getAuth(app);
 window.db = getFirestore(app);
 window.api = { signInWithEmailAndPassword, addDoc, updateDoc, doc, collection, query, onSnapshot, where };
+
+// NOTIFICAÇÃO REAL
+const messaging = getMessaging(app);
+Notification.requestPermission().then(permission => {
+  if (permission === "granted") {
+    getToken(messaging, {
+      vapidKey: "BOfTK-vxWs1SzlgOMeppPtocUyBlET_dPZ837vBYoZfLhLnJ_sMSkNnlI1V0ySfTwYAsEAU4dTbwNmp_akV1wHY"
+    }).then(token => {
+      console.log("TOKEN:", token);
+    });
+  }
+});
 </script><script type="text/babel">
 function App(){
 const [user,setUser]=React.useState(null);
@@ -45,11 +97,6 @@ setAgenda(snap.docs.map(d=>({id:d.id,...d.data()})));
 });
 }
 });
-
-// PWA service worker
-if("serviceWorker" in navigator){
-navigator.serviceWorker.register("sw.js");
-}
 },[]);
 
 const salvar=async()=>{
@@ -59,7 +106,6 @@ await window.api.addDoc(window.api.collection(window.db,"agendamentos"),{
 setModal(null);
 }
 
-// DRAG
 const onDragStart=(e,id)=>{
 e.dataTransfer.setData("id",id);
 }
@@ -75,6 +121,16 @@ const horas=[...Array(12)].map((_,i)=>i+8);
 const dias=[...Array(7)].map((_,i)=>{
 const d=new Date(); d.setDate(d.getDate()+i); return d;
 });
+
+if(!user){
+return(
+<div className="container">
+<h2>Login</h2>
+<input placeholder="Email" />
+<input type="password" placeholder="Senha" />
+<button>Entrar</button>
+</div>
+)}
 
 return(
 <div className="container">
@@ -128,18 +184,5 @@ className="event">
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script><!-- SERVICE WORKER --><script>
-const sw = `
-self.addEventListener('push', function(event) {
-  const data = event.data.json();
-  self.registration.showNotification(data.title, {
-    body: data.body
-  });
-});
-`;
-
-const blob = new Blob([sw], { type: 'application/javascript' });
-const swURL = URL.createObjectURL(blob);
-navigator.serviceWorker.register(swURL);
 </script></body>
 </html>
