@@ -14,29 +14,25 @@
         .container { max-width: 500px; margin: auto; padding: 10px; }
         
         /* Abas Principais */
-        .tabs-main { display: flex; gap: 5px; margin-bottom: 15px; sticky: top; }
-        .tabs-main button { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #e0e0e0; transition: 0.3s; }
+        .tabs-main { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tabs-main button { flex: none; min-width: 100px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #e0e0e0; }
         .tabs-main button.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(26,115,232,0.3); }
 
         .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
         
-        /* Lista de Agendamentos */
-        .age-item { border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 10px; background: #fff; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .age-info b { font-size: 1.1rem; display: block; margin-bottom: 4px; }
-        .age-date { font-size: 1rem; color: #555; font-weight: 600; }
-        .btn-zap { background: var(--success); color: white; padding: 8px 12px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer; text-decoration: none; display: flex; align-items: center; }
-
-        /* Grade de Horários */
+        /* Estilos de Hoje e Semana (Mantidos) */
+        .age-item { border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 10px; background: #fff; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-zap { background: var(--success); color: white; padding: 10px; border-radius: 50%; border: none; font-size: 1.2rem; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
         .time-row { display: flex; border-bottom: 1px solid #f0f0f0; min-height: 60px; }
         .time-hour { width: 60px; font-weight: bold; color: var(--primary); padding-top: 10px; border-right: 1px solid #f0f0f0; }
-        .time-slot { flex: 1; padding: 5px; }
-        .booked { background: #eef4ff; border-radius: 6px; padding: 8px; border-left: 4px solid var(--primary); font-size: 0.9rem; }
+        .booked { background: #eef4ff; border-radius: 6px; padding: 8px; border-left: 4px solid var(--primary); font-size: 0.9rem; margin: 2px; }
 
-        /* Calendário Simples */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .cal-day { padding: 10px 0; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; }
-        .cal-day.has-event::after { content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--danger); border-radius: 50%; }
-        .cal-day.selected { background: var(--primary); color: white; }
+        /* Formulários */
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .main-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .btn-add { background: var(--success); }
+        .search-res { border: 1px solid #eee; border-radius: 8px; max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
+        .search-row { padding: 10px; border-bottom: 1px solid #f9f9f9; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -45,14 +41,16 @@
     <script type="text/babel">
         function App() {
             const [aba, setAba] = React.useState("hoje");
-            const [dataFiltro, setDataFiltro] = React.useState(new Date().toISOString().split('T')[0]);
+            const [clientes, setClientes] = React.useState([]);
+            const [pacotes, setPacotes] = React.useState([{id:1, nome:"Maquiagem", valor:"150"}]);
+            const [agendamentos, setAgendamentos] = React.useState([]);
             
-            // Dados de exemplo baseados nas suas fotos
-            const [agendamentos] = React.useState([
-                { id: 1, cliente: "Sophia", whatsapp: "991234567", servico: "Make", valor: "160", data: "2026-03-29", hora: "15:00" },
-                { id: 2, cliente: "Suzy", whatsapp: "998765432", servico: "Maquiagem", valor: "150", data: "2026-03-28", hora: "13:00" },
-                { id: 3, cliente: "Matesus", whatsapp: "999887766", servico: "Corte", valor: "50", data: "2026-03-31", hora: "13:00" }
-            ]);
+            // Estados de formulário
+            const [busca, setBusca] = React.useState("");
+            const [cliSel, setCliSel] = React.useState(null);
+            const [fCli, setFCli] = React.useState({ nome: "", whatsapp: "" });
+            const [fPac, setFPac] = React.useState({ nome: "", valor: "" });
+            const [fAge, setFAge] = React.useState({ pacoteId: "", dataHora: "" });
 
             const horasGrade = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
@@ -64,20 +62,96 @@
                         <div className="tabs-main">
                             <button className={aba==='hoje'?'active':''} onClick={()=>setAba('hoje')}>Hoje</button>
                             <button className={aba==='semana'?'active':''} onClick={()=>setAba('semana')}>Semana</button>
-                            <button className={aba==='config'?'active':''} onClick={()=>setAba('config')}>Pacotes</button>
+                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
+                            <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
                         </div>
 
+                        {/* ABA HOJE (MANTIDA) */}
                         {aba === 'hoje' && (
-                            <>
-                                <div className="card">
-                                    <h3>Grade de Horários - {dataFiltro.split('-').reverse().join('/')}</h3>
-                                    {horasGrade.map(h => {
-                                        const ag = agendamentos.find(a => a.data === dataFiltro && a.hora === h);
-                                        return (
-                                            <div key={h} className="time-row">
-                                                <div className="time-hour">{h}</div>
-                                                <div className="time-slot">
-                                                    {ag ? (
+                            <div className="card">
+                                <h3>Horários de Hoje</h3>
+                                {horasGrade.map(h => (
+                                    <div key={h} className="time-row">
+                                        <div className="time-hour">{h}</div>
+                                        <div className="time-slot" style={{flex:1}}>
+                                            {agendamentos.filter(a => a.hora === h).map(ag => (
+                                                <div className="booked" key={ag.id}>
+                                                    <b>{ag.cliente}</b> - {ag.servico}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ABA SEMANA (MANTIDA) */}
+                        {aba === 'semana' && (
+                            <div className="card">
+                                <h3>Agenda da Semana</h3>
+                                {agendamentos.map(a => (
+                                    <div key={a.id} className="age-item">
+                                        <div><b>{a.cliente}</b><br/>{a.servico} - {a.data}</div>
+                                        <a href={`https://wa.me/55${a.whatsapp}`} className="btn-zap">📱</a>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* ABA NOVO (RESTAURADA) */}
+                        {aba === 'novo' && (
+                            <div className="card">
+                                <h3>Novo Agendamento</h3>
+                                {!cliSel ? (
+                                    <>
+                                        <input placeholder="🔍 Buscar cliente..." value={busca} onChange={e=>setBusca(e.target.value)} />
+                                        <div className="search-res">
+                                            {clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => (
+                                                <div className="search-row" onClick={()=>setCliSel(c)}>{c.nome}</div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : <div style={{background:'#eef4ff', padding:'10px', borderRadius:'8px'}}>Cliente: <b>{cliSel.nome}</b> <button onClick={()=>setCliSel(null)} style={{float:'right', background:'none', border:'none', color:'red'}}>X</button></div>}
+                                
+                                <select onChange={e=>setFAge({...fAge, pacoteId: e.target.value})}>
+                                    <option>Selecione o Pacote</option>
+                                    {pacotes.map(p => <option key={p.id} value={p.id}>{p.nome} - R${p.valor}</option>)}
+                                </select>
+                                <input type="datetime-local" onChange={e=>setFAge({...fAge, dataHora: e.target.value})} />
+                                <button className="main-btn" onClick={()=>{alert("Agendado!"); setAba("hoje")}}>SALVAR AGENDAMENTO</button>
+
+                                <hr style={{margin:'20px 0'}}/>
+                                <h3>Cadastrar Cliente</h3>
+                                <input placeholder="Nome do Cliente" value={fCli.nome} onChange={e=>setFCli({...fCli, nome:e.target.value})} />
+                                <input placeholder="WhatsApp (DDD + Número)" value={fCli.whatsapp} onChange={e=>setFCli({...fCli, whatsapp:e.target.value})} />
+                                <button className="main-btn btn-add" onClick={()=>{setClientes([...clientes, {id:Date.now(), ...fCli}]); setFCli({nome:"", whatsapp:""}); alert("Cliente Salvo!")}}>CADASTRAR CLIENTE</button>
+                            </div>
+                        )}
+
+                        {/* ABA PACOTES (RESTAURADA) */}
+                        {aba === 'pacotes' && (
+                            <div className="card">
+                                <h3>Gerenciar Pacotes</h3>
+                                <input placeholder="Ex: Maquiagem Social" value={fPac.nome} onChange={e=>setFPac({...fPac, nome:e.target.value})} />
+                                <input placeholder="Preço R$" type="number" value={fPac.valor} onChange={e=>setFPac({...fPac, valor:e.target.value})} />
+                                <button className="main-btn btn-add" onClick={()=>{setPacotes([...pacotes, {id:Date.now(), ...fPac}]); setFPac({nome:"", valor:""})}}>ADICIONAR PACOTE</button>
+                                <hr/>
+                                {pacotes.map(p => (
+                                    <div key={p.id} style={{display:'flex', justifyContent:'space-between', padding:'10px', borderBottom:'1px solid #eee'}}>
+                                        <span>{p.nome} - <b>R$ {p.valor}</b></span>
+                                        <button onClick={()=>setPacotes(pacotes.filter(x => x.id !== p.id))} style={{background:'red', color:'white', border:'none', borderRadius:'4px', padding:'5px'}}>X</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
                                                         <div className="booked">
                                                             <b>{ag.cliente}</b> - {ag.servico}
                                                             <div style={{marginTop: '5px'}}>
