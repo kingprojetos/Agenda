@@ -1,38 +1,40 @@
-<script type="text/babel">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Business PRO</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root { --primary: #1a73e8; --bg: #f8f9fa; }
+        body { font-family: sans-serif; margin: 0; background: var(--bg); }
+        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .container { max-width: 500px; margin: auto; padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tabs button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: #ddd; }
+        .tabs button.active { background: var(--primary); color: white; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button.main-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
         function App() {
-            const [user, setUser] = React.useState(null);
             const [aba, setAba] = React.useState("agenda");
-            const [clientes, setClientes] = React.useState([]);
-            const [pacotes, setPacotes] = React.useState([]);
-            const [agendamentos, setAgendamentos] = React.useState([]);
-            
-            // Estados para os formulários
-            const [busca, setBusca] = React.useState("");
-            const [clienteSelecionado, setClienteSelecionado] = React.useState(null);
+            const [pacotes, setPacotes] = React.useState([]); // Aqui ficam seus pacotes (Maquiagem, Cabelo, etc)
             const [fPacote, setFPacote] = React.useState({ nome: "", valor: "" });
-            const [fAgenda, setFAgenda] = React.useState({ pacoteId: "", dataHora: "" });
 
-            React.useEffect(() => {
-                window.api.onAuthStateChanged(window.auth, (u) => {
-                    setUser(u);
-                    if (u) {
-                        // Busca dados do banco de dados que você configurou (conforme sua imagem do Cloud Firestore)
-                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "clientes"), window.api.where("userId", "==", u.uid)), s => setClientes(s.docs.map(d => ({id:d.id, ...d.data()}))));
-                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "pacotes"), window.api.where("userId", "==", u.uid)), s => setPacotes(s.docs.map(d => ({id:d.id, ...d.data()}))));
-                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "agendamentos"), window.api.where("userId", "==", u.uid)), s => setAgendamentos(s.docs.map(d => ({id:d.id, ...d.data()}))));
-                    }
-                });
-            }, []);
-
-            // Salva um novo pacote de serviço
-            const salvarPacote = async () => {
-                if(!fPacote.nome || !fPacote.valor) return alert("Preencha o nome e o valor do pacote");
-                await window.api.addDoc(window.api.collection(window.db, "pacotes"), { 
-                    ...fPacote, 
-                    userId: user.uid 
-                });
+            // Função para adicionar pacote
+            const adicionarPacote = () => {
+                if(!fPacote.nome || !fPacote.valor) return alert("Preencha o nome e valor!");
+                setPacotes([...pacotes, { id: Date.now(), ...fPacote }]);
                 setFPacote({ nome: "", valor: "" });
-                alert("Pacote adicionado com sucesso!");
+                alert("Pacote salvo com sucesso!");
             };
 
             return (
@@ -45,46 +47,42 @@
                             <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
                         </div>
 
-                        {/* ABA DE GERENCIAR PACOTES (A que você pediu) */}
                         {aba === 'pacotes' && (
                             <div className="card">
-                                <h3>Adicionar Novo Pacote</h3>
-                                <p style={{fontSize: '12px', color: '#666'}}>Cadastre aqui seus serviços (Ex: Maquiagem, Cabelo + Make)</p>
-                                
+                                <h3>Gerenciar Pacotes</h3>
                                 <input 
-                                    placeholder="Nome do Pacote" 
-                                    value={fPacote.nome} 
-                                    onChange={e=>setFPacote({...fPacote, nome:e.target.value})}
+                                    placeholder="Nome do Pacote (Ex: Maquiagem)" 
+                                    value={fPacote.nome}
+                                    onChange={e => setFPacote({...fPacote, nome: e.target.value})}
                                 />
                                 <input 
                                     placeholder="Valor R$" 
-                                    type="number" 
-                                    value={fPacote.valor} 
-                                    onChange={e=>setFPacote({...fPacote, valor:e.target.value})}
+                                    type="number"
+                                    value={fPacote.valor}
+                                    onChange={e => setFPacote({...fPacote, valor: e.target.value})}
                                 />
-                                <button onClick={salvarPacote} style={{background: '#34a853'}}>SALVAR PACOTE</button>
+                                <button className="main-btn" onClick={adicionarPacote}>ADICIONAR PACOTE</button>
                                 
-                                <hr style={{margin: '20px 0'}}/>
-                                
-                                <h3>Seus Pacotes Atuais</h3>
-                                {pacotes.length === 0 ? <p>Nenhum pacote cadastrado.</p> : 
-                                    pacotes.map(p => (
-                                        <div key={p.id} className="item-list" style={{display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid #eee'}}>
-                                            <span>{p.nome} - <b>R$ {p.valor}</b></span>
-                                            <button 
-                                                style={{width: 'auto', padding: '5px 10px', background: '#ea4335', fontSize: '10px'}}
-                                                onClick={() => window.api.deleteDoc(window.api.doc(window.db, "pacotes", p.id))}
-                                            > Excluir </button>
+                                <div style={{marginTop: '20px'}}>
+                                    <h4>Meus Serviços:</h4>
+                                    {pacotes.map(p => (
+                                        <div key={p.id} style={{display:'flex', justifyContent:'space-between', padding:'10px', borderBottom:'1px solid #eee'}}>
+                                            <span>{p.nome}</span>
+                                            <b>R$ {p.valor}</b>
                                         </div>
-                                    ))
-                                }
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        {/* ... (mantenha o código das abas 'agenda' e 'novo' que já funcionam) ... */}
+                        {aba === 'agenda' && <div className="card"><h3>Seus horários aparecerão aqui.</h3></div>}
+                        {aba === 'novo' && <div className="card"><h3>Tela de agendamento.</h3></div>}
                     </div>
                 </div>
             );
         }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
+</body>
+</html>
