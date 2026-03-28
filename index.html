@@ -3,25 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda PRO - Lailton</title>
+    <title>Agenda Business PRO</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f0f2f5; color: #1c1e21; }
-        .navbar { background: #1a73e8; color: white; padding: 15px; text-align: center; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .container { max-width: 500px; margin: 20px auto; padding: 10px; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #1a73e8; font-size: 1.2rem; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:active { transform: scale(0.98); }
-        .btn-sair { background: #f1f3f4; color: #5f6368; margin-top: 10px; }
-        .agendamento-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; border-left: 6px solid #1a73e8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .agendamento-item b { font-size: 1.1rem; display: block; margin-bottom: 4px; }
-        .info { color: #65676b; font-size: 0.9rem; margin: 2px 0; }
-        .valor { color: #28a745; font-weight: bold; font-size: 1.1rem; margin-top: 8px; }
-        .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(135deg, #1a73e8, #6ea8fe); }
+        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --gray: #5f6368; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f8f9fa; color: #202124; }
+        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 1000; }
+        .container { max-width: 600px; margin: auto; padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        
+        /* Calendário Customizado */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-day { padding: 10px 0; border-radius: 8px; font-size: 14px; position: relative; cursor: pointer; background: #fff; border: 1px solid #eee; }
+        .calendar-day.has-event::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--danger); border-radius: 50%; }
+        .calendar-day.selected { background: var(--primary); color: white; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
+
+        /* Estilo dos Agendamentos */
+        .agenda-card { border-left: 6px solid var(--primary); transition: 0.3s; }
+        .agenda-card.concluido { border-left-color: var(--success); opacity: 0.8; }
+        .btn-group { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; color: white; display: flex; align-items: center; justify-content: center; }
+        .btn-zap { background: #25d366; }
+        .btn-done { background: var(--success); }
+        .btn-cancel { background: var(--danger); }
+        
+        .tabs { display: flex; background: white; border-radius: 25px; padding: 5px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tabs button { flex: 1; padding: 10px; border: none; background: none; border-radius: 20px; cursor: pointer; font-weight: bold; color: var(--gray); }
+        .tabs button.active { background: var(--primary); color: white; }
+
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -30,7 +43,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
@@ -44,86 +57,135 @@
         const app = initializeApp(firebaseConfig);
         window.auth = getAuth(app);
         window.db = getFirestore(app);
-        window.api = { signInWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where, orderBy, onAuthStateChanged };
+        window.api = { signInWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where, doc, updateDoc, deleteDoc, onAuthStateChanged };
     </script>
 
     <script type="text/babel">
         function App() {
             const [user, setUser] = React.useState(null);
-            const [email, setEmail] = React.useState("");
-            const [senha, setSenha] = React.useState("");
-            const [agenda, setAgenda] = React.useState([]);
-            
-            const [cliente, setCliente] = React.useState("");
-            const [servico, setServico] = React.useState("");
-            const [valor, setValor] = React.useState("");
-            const [dataHora, setDataHora] = React.useState("");
+            const [aba, setAba] = React.useState("hoje");
+            const [clientes, setClientes] = React.useState([]);
+            const [pacotes, setPacotes] = React.useState([]);
+            const [agendamentos, setAgendamentos] = React.useState([]);
+            const [dataFiltro, setDataFiltro] = React.useState(new Date());
+
+            // Estados dos formulários
+            const [formC, setFormC] = React.useState({ nome: "", sobrenome: "", whatsapp: "" });
+            const [formA, setFormA] = React.useState({ clienteId: "", pacoteId: "", dataHora: "", pago: "Pendente" });
 
             React.useEffect(() => {
                 window.api.onAuthStateChanged(window.auth, (u) => {
                     setUser(u);
                     if (u) {
-                        const q = window.api.query(
-                            window.api.collection(window.db, "agendamentos"),
-                            window.api.where("userId", "==", u.uid)
-                        );
-                        window.api.onSnapshot(q, (snapshot) => {
-                            const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            // Ordenar por data manualmente
-                            lista.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
-                            setAgenda(lista);
-                        });
+                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "clientes"), window.api.where("userId", "==", u.uid)), s => setClientes(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "pacotes"), window.api.where("userId", "==", u.uid)), s => setPacotes(s.docs.map(d => ({id:d.id, ...d.data()}))));
+                        window.api.onSnapshot(window.api.query(window.api.collection(window.db, "agendamentos"), window.api.where("userId", "==", u.uid)), s => setAgendamentos(s.docs.map(d => ({id:d.id, ...d.data()}))));
                     }
                 });
             }, []);
 
-            const salvar = async () => {
-                if (!cliente || !servico || !valor || !dataHora) return alert("Por favor, preencha todos os campos!");
-                try {
-                    await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
-                        cliente, servico, valor, dataHora, userId: user.uid
-                    });
-                    setCliente(""); setServico(""); setValor(""); setDataHora("");
-                    alert("Agendado com sucesso!");
-                } catch (e) { alert("Erro ao salvar"); }
+            // Funções de Ação
+            const concluir = async (id) => await window.api.updateDoc(window.api.doc(window.db, "agendamentos", id), { realizado: true });
+            const cancelar = async (id) => confirm("Deseja cancelar?") && await window.api.deleteDoc(window.api.doc(window.db, "agendamentos", id));
+            const abrirZap = (tel) => window.open(`https://wa.me/55${tel.replace(/\D/g,'')}`, '_blank');
+
+            const salvarAgendamento = async () => {
+                const cli = clientes.find(c => c.id === formA.clienteId);
+                const pac = pacotes.find(p => p.id === formA.pacoteId);
+                await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
+                    ...formA,
+                    clienteNome: cli.nome + " " + cli.sobrenome,
+                    whatsapp: cli.whatsapp,
+                    servico: pac.nome,
+                    valor: pac.valor,
+                    realizado: false,
+                    userId: user.uid
+                });
+                alert("Agendado!"); setAba("hoje");
             };
 
-            if (!user) return (
-                <div className="login-screen">
-                    <div className="card" style={{width: '320px'}}>
-                        <h1 style={{textAlign:'center', color:'#1a73e8'}}>Agenda PRO</h1>
-                        <input type="email" placeholder="Seu e-mail" onChange={e => setEmail(e.target.value)} />
-                        <input type="password" placeholder="Sua senha" onChange={e => setSenha(e.target.value)} />
-                        <button onClick={() => window.api.signInWithEmailAndPassword(window.auth, email, senha).catch(() => alert("Acesso negado"))}>ENTRAR</button>
+            // Lógica do Calendário
+            const diasNoMes = new Date(dataFiltro.getFullYear(), dataFiltro.getMonth()+1, 0).getDate();
+            const diasArr = Array.from({length: diasNoMes}, (_, i) => i + 1);
+
+            const renderAgendamento = (a) => (
+                <div key={a.id} className={`card agenda-card ${a.realizado ? 'concluido' : ''}`}>
+                    <div style={{display:'flex', justifyContent:'space-between'}}>
+                        <b>{a.clienteNome}</b>
+                        <span style={{fontSize:'12px'}}>{new Date(a.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <div style={{fontSize:'14px', color:'#555'}}>{a.servico} - R$ {a.valor}</div>
+                    <div style={{fontSize:'12px', color: '#888'}}>{new Date(a.dataHora).toLocaleDateString()}</div>
+                    
+                    <div className="btn-group">
+                        <button className="btn-action btn-zap" onClick={() => abrirZap(a.whatsapp)}>WhatsApp</button>
+                        {!a.realizado && <button className="btn-action btn-done" onClick={() => concluir(a.id)}>Concluir</button>}
+                        <button className="btn-action btn-cancel" onClick={() => cancelar(a.id)}>Cancelar</button>
                     </div>
                 </div>
             );
 
+            if (!user) return <div className="container"><div className="card"><h2>Login</h2><input placeholder="Email" id="le"/><input type="password" placeholder="Senha" id="ls"/><button onClick={() => window.api.signInWithEmailAndPassword(window.auth, document.getElementById('le').value, document.getElementById('ls').value)}>Entrar</button></div></div>;
+
             return (
                 <div>
-                    <div className="navbar">Minha Agenda Profissional</div>
+                    <div className="navbar">AGENDA PRO</div>
                     <div className="container">
-                        <div className="card">
-                            <h2>Novo Agendamento</h2>
-                            <input placeholder="Nome do Cliente" value={cliente} onChange={e => setCliente(e.target.value)} />
-                            <input placeholder="Serviço (ex: Maquiagem)" value={servico} onChange={e => setServico(e.target.value)} />
-                            <input placeholder="Valor R$" type="number" value={valor} onChange={e => setValor(e.target.value)} />
-                            <input type="datetime-local" value={dataHora} onChange={e => setDataHora(e.target.value)} />
-                            <button onClick={salvar}>SALVAR AGENDAMENTO</button>
+                        <div className="tabs">
+                            <button className={aba==='hoje'?'active':''} onClick={()=>setAba('hoje')}>Semana</button>
+                            <button className={aba==='mes'?'active':''} onClick={()=>setAba('mes')}>Mensal</button>
+                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
                         </div>
 
-                        <h2>Meus Compromissos</h2>
-                        {agenda.length === 0 && <p style={{textAlign:'center', color:'#666'}}>Nenhum agendamento encontrado.</p>}
-                        {agenda.map(item => (
-                            <div key={item.id} className="agendamento-item">
-                                <b>{item.cliente}</b>
-                                <div className="info">🛠 {item.servico}</div>
-                                <div className="info">📅 {new Date(item.dataHora).toLocaleString('pt-BR')}</div>
-                                <div className="valor">R$ {item.valor}</div>
+                        {aba === 'hoje' && (
+                            <div>
+                                <h3>Atendimentos da Semana</h3>
+                                {agendamentos.filter(a => {
+                                    const diff = (new Date(a.dataHora) - new Date()) / (1000*60*60*24);
+                                    return diff >= -1 && diff <= 7;
+                                }).map(renderAgendamento)}
                             </div>
-                        ))}
-                        
-                        <button className="btn-sair" onClick={() => window.auth.signOut()}>SAIR DO SISTEMA</button>
+                        )}
+
+                        {aba === 'mes' && (
+                            <div>
+                                <div className="cal-header">
+                                    <button onClick={() => setDataFiltro(new Date(dataFiltro.setMonth(dataFiltro.getMonth()-1)))}>&lt;</button>
+                                    <span>{dataFiltro.toLocaleString('pt-BR', {month:'long', year:'numeric'})}</span>
+                                    <button onClick={() => setDataFiltro(new Date(dataFiltro.setMonth(dataFiltro.getMonth()+1)))}>&gt;</button>
+                                </div>
+                                <div className="calendar-grid">
+                                    {diasArr.map(d => {
+                                        const temData = agendamentos.some(a => new Date(a.dataHora).getDate() === d && new Date(a.dataHora).getMonth() === dataFiltro.getMonth());
+                                        return <div key={d} className={`calendar-day ${temData?'has-event':''}`}>{d}</div>
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {aba === 'novo' && (
+                            <div className="card">
+                                <h2>Novo Agendamento</h2>
+                                <select onChange={e => setFormA({...formA, clienteId: e.target.value})}>
+                                    <option>Selecione o Cliente</option>
+                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} {c.sobrenome}</option>)}
+                                </select>
+                                <select onChange={e => setFormA({...formA, pacoteId: e.target.value})}>
+                                    <option>Selecione o Pacote</option>
+                                    {pacotes.map(p => <option key={p.id} value={p.id}>{p.nome} (R$ {p.valor})</option>)}
+                                </select>
+                                <input type="datetime-local" onChange={e => setFormA({...formA, dataHora: e.target.value})} />
+                                <button onClick={salvarAgendamento}>SALVAR</button>
+                                <hr/>
+                                <h3>Ou Cadastre Novo Cliente</h3>
+                                <input placeholder="Nome" onChange={e=>setFormC({...formC, nome: e.target.value})} />
+                                <input placeholder="WhatsApp" onChange={e=>setFormC({...formC, whatsapp: e.target.value})} />
+                                <button className="btn-done" onClick={async () => {
+                                    await window.api.addDoc(window.api.collection(window.db, "clientes"), {...formC, userId: user.uid});
+                                    alert("Cliente salvo!");
+                                }}>CADASTRAR CLIENTE</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
