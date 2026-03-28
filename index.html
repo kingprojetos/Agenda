@@ -1,98 +1,161 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!DOCTYPE html><html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Agenda Profissional</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f0f2f5; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2 { text-align: center; color: #1a73e8; }
-        input { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .btn-out { background: #5f6368; margin-top: 20px; }
-        .item { background: #fff; border: 1px solid #eee; padding: 15px; margin-top: 10px; border-radius: 10px; border-left: 5px solid #1a73e8; }
-        .price { font-weight: bold; color: #28a745; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda PRO+</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>
+body { font-family: 'Segoe UI'; background:#f5f7fb; margin:0; }
+.container { max-width:700px; margin:auto; padding:15px; }
+.card { background:white; padding:15px; border-radius:15px; margin-bottom:15px; box-shadow:0 4px 12px rgba(0,0,0,0.08);} 
+h1,h2 { text-align:center; color:#1a73e8; }
+input, select { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ddd; }
+button { width:100%; padding:12px; border:none; border-radius:10px; background:#1a73e8; color:white; font-weight:bold; margin-top:5px; }
+.small-btn { width:auto; padding:6px 10px; margin:3px; }
+.item { border-left:5px solid #1a73e8; padding:10px; margin-top:10px; background:#fff; border-radius:10px; }
+.price { color:green; font-weight:bold; }
+.nav { display:flex; gap:5px; margin-bottom:10px; }
+</style></head><body>
+<div id="root"></div><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
-            authDomain: "agenda-6b09e.firebaseapp.com",
-            projectId: "agenda-6b09e",
-            storageBucket: "agenda-6b09e.firebasestorage.app",
-            messagingSenderId: "848846524028",
-            appId: "1:848846524028:web:2fdc1fba17859d79edc3f9"
-        };
+const firebaseConfig = {
+apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
+authDomain: "agenda-6b09e.firebaseapp.com",
+projectId: "agenda-6b09e",
+storageBucket: "agenda-6b09e.firebasestorage.app",
+messagingSenderId: "848846524028",
+appId: "1:848846524028:web:2fdc1fba17859d79edc3f9"
+};
 
-        const app = initializeApp(firebaseConfig);
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
-        window.api = { signInWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where };
-    </script>
+const app = initializeApp(firebaseConfig);
+window.auth = getAuth(app);
+window.db = getFirestore(app);
+window.api = { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where };
+</script><script type="text/babel">
+function App(){
+const [user,setUser]=React.useState(null);
+const [email,setEmail]=React.useState("");
+const [senha,setSenha]=React.useState("");
+const [agenda,setAgenda]=React.useState([]);
+const [busca,setBusca]=React.useState("");
+const [view,setView]=React.useState("agenda");
+const [pacotes,setPacotes]=React.useState([]);
 
-    <script type="text/babel">
-        function App() {
-            const [user, setUser] = React.useState(null);
-            const [email, setEmail] = React.useState("");
-            const [senha, setSenha] = React.useState("");
-            const [agenda, setAgenda] = React.useState([]);
-            const [cliente, setCliente] = React.useState("");
-            const [servico, setServico] = React.useState("");
-            const [valor, setValor] = React.useState("");
+const [form,setForm]=React.useState({cliente:"",servico:"",valor:"",data:""});
 
-            React.useEffect(() => {
-                const unsubAuth = window.auth.onAuthStateChanged((u) => {
-                    setUser(u);
-                    if (u) {
-                        const q = window.api.query(window.api.collection(window.db, "agendamentos"), window.api.where("userId", "==", u.uid));
-                        window.api.onSnapshot(q, (snapshot) => {
-                            setAgenda(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                        });
-                    }
-                });
-            }, []);
+React.useEffect(()=>{
+window.auth.onAuthStateChanged(u=>{
+setUser(u);
+if(u){
+const q=window.api.query(window.api.collection(window.db,"agendamentos"),window.api.where("userId","==",u.uid));
+window.api.onSnapshot(q,snap=>{
+setAgenda(snap.docs.map(d=>({id:d.id,...d.data()})));
+});
+}
+});
+},[]);
 
-            const salvar = async () => {
-                if (!cliente || !servico || !valor) return alert("Preencha tudo!");
-                await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
-                    cliente, servico, valor, userId: user.uid, data: new Date().toLocaleString()
-                });
-                setCliente(""); setServico(""); setValor("");
-            };
+const salvar=async()=>{
+await window.api.addDoc(window.api.collection(window.db,"agendamentos"),{
+...form,userId:user.uid
+});
+setForm({cliente:"",servico:"",valor:"",data:""});
+}
 
-            if (!user) return (
-                <div className="container">
-                    <h1>Acesso Restrito</h1>
-                    <input type="email" placeholder="E-mail" onChange={e => setEmail(e.target.value)} />
-                    <input type="password" placeholder="Senha" onChange={e => setSenha(e.target.value)} />
-                    <button onClick={() => window.api.signInWithEmailAndPassword(window.auth, email, senha).catch(e => alert("Acesso negado"))}>ENTRAR</button>
-                </div>
-            );
+const filtrados=agenda.filter(a=>a.cliente.toLowerCase().includes(busca.toLowerCase()));
 
-            return (
-                <div className="container">
-                    <h2>Nova Reserva</h2>
-                    <input placeholder="Cliente" value={cliente} onChange={e => setCliente(e.target.value)} />
-                    <input placeholder="Serviço" value={servico} onChange={e => setServico(e.target.value)} />
-                    <input placeholder="Valor (R$)" type="number" value={valor} onChange={e => setValor(e.target.value)} />
-                    <button onClick={salvar}>SALVAR</button>
-                    <h2 style={{marginTop: '20px'}}>Meus Dados</h2>
-                    {agenda.map(i => <div key={i.id} className="item"><p><b>{i.cliente}</b> - {i.servico}</p><p className="price">R$ {i.valor}</p></div>)}
-                    <button onClick={() => window.auth.signOut()} className="btn-out">SAIR</button>
-                </div>
-            );
-        }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
-</body>
+React.useEffect(()=>{
+if(view==="relatorio"){
+setTimeout(()=>{
+const ctx=document.getElementById("grafico");
+if(!ctx) return;
+new Chart(ctx,{
+ type:"bar",
+ data:{
+ labels:agenda.map(a=>a.cliente),
+ datasets:[{label:"Faturamento",data:agenda.map(a=>a.valor)}]
+ }
+});
+},300);
+}
+},[view]);
+
+if(!user){
+return(
+<div className="container">
+<h1>Login</h1>
+<input placeholder="Email" onChange={e=>setEmail(e.target.value)}/>
+<input type="password" placeholder="Senha" onChange={e=>setSenha(e.target.value)}/>
+<button onClick={()=>window.api.signInWithEmailAndPassword(window.auth,email,senha)}>Entrar</button>
+<button onClick={()=>window.api.createUserWithEmailAndPassword(window.auth,email,senha)}>Criar conta</button>
+</div>
+)}
+
+return(
+<div className="container">
+<h2>Agenda PRO+</h2>
+
+<div className="nav">
+<button onClick={()=>setView("agenda")}>Agenda</button>
+<button onClick={()=>setView("pacotes")}>Pacotes</button>
+<button onClick={()=>setView("relatorio")}>Relatório</button>
+</div>
+
+{view==="agenda" && (
+<>
+<div className="card">
+<input placeholder="Buscar cliente" value={busca} onChange={e=>setBusca(e.target.value)}/>
+</div>
+
+<div className="card">
+<input placeholder="Cliente" value={form.cliente} onChange={e=>setForm({...form,cliente:e.target.value})}/>
+<input placeholder="Serviço" value={form.servico} onChange={e=>setForm({...form,servico:e.target.value})}/>
+<input placeholder="Valor" type="number" value={form.valor} onChange={e=>setForm({...form,valor:e.target.value})}/>
+<input type="datetime-local" value={form.data} onChange={e=>setForm({...form,data:e.target.value})}/>
+<button onClick={salvar}>Salvar</button>
+</div>
+
+<div className="card">
+{filtrados.map(a=>(
+<div key={a.id} className="item">
+<p><b>{a.cliente}</b> - {a.servico}</p>
+<p>{new Date(a.data).toLocaleString()}</p>
+<p className="price">R$ {a.valor}</p>
+</div>
+))}
+</div>
+</>
+)}
+
+{view==="pacotes" && (
+<div className="card">
+<h3>Pacotes</h3>
+<input placeholder="Nome do pacote" onKeyDown={e=>{
+if(e.key==="Enter"){
+setPacotes([...pacotes,{nome:e.target.value}]);
+e.target.value="";
+}}}/>
+{pacotes.map((p,i)=>(<p key={i}>{p.nome}</p>))}
+</div>
+)}
+
+{view==="relatorio" && (
+<div className="card">
+<h3>Relatório</h3>
+<canvas id="grafico"></canvas>
+</div>
+)}
+
+<button onClick={()=>window.auth.signOut()}>Sair</button>
+</div>
+)
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body>
 </html>
