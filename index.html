@@ -8,33 +8,35 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --gray: #5f6368; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f8f9fa; color: #202124; }
-        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 1000; }
+        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); }
+        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top:0; z-index:100; }
         .container { max-width: 600px; margin: auto; padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
         
-        /* Calendário Customizado */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .calendar-day { padding: 10px 0; border-radius: 8px; font-size: 14px; position: relative; cursor: pointer; background: #fff; border: 1px solid #eee; }
-        .calendar-day.has-event::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--danger); border-radius: 50%; }
-        .calendar-day.selected { background: var(--primary); color: white; }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
-
-        /* Estilo dos Agendamentos */
-        .agenda-card { border-left: 6px solid var(--primary); transition: 0.3s; }
-        .agenda-card.concluido { border-left-color: var(--success); opacity: 0.8; }
-        .btn-group { display: flex; gap: 8px; margin-top: 12px; }
-        .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; color: white; display: flex; align-items: center; justify-content: center; }
-        .btn-zap { background: #25d366; }
-        .btn-done { background: var(--success); }
-        .btn-cancel { background: var(--danger); }
-        
-        .tabs { display: flex; background: white; border-radius: 25px; padding: 5px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .tabs button { flex: 1; padding: 10px; border: none; background: none; border-radius: 20px; cursor: pointer; font-weight: bold; color: var(--gray); }
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tabs button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #ddd; }
         .tabs button.active { background: var(--primary); color: white; }
 
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .search-results { border: 1px solid #ddd; border-radius: 8px; max-height: 150px; overflow-y: auto; background: white; margin-top: -5px; margin-bottom: 10px; }
+        .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
+        .search-item:hover { background: #f0f7ff; }
+        .selected-client { background: #e6f4ea; padding: 10px; border-radius: 8px; border: 1px solid #1e8e3e; margin-bottom: 10px; font-weight: bold; }
+
+        .time-slot { display: flex; border-bottom: 1px solid #eee; min-height: 80px; background: white; }
+        .time-label { width: 60px; padding: 10px; font-weight: bold; color: var(--primary); border-right: 2px solid var(--primary); display: flex; align-items: center; }
+        .time-content { flex: 1; padding: 10px; }
+        .appointment { background: #eef4ff; border-radius: 8px; padding: 10px; border-left: 5px solid var(--primary); }
+        .appointment.done { border-left-color: var(--success); background: #e6f4ea; }
+
+        .btn-group { display: flex; gap: 5px; margin-top: 10px; }
+        .btn-mini { flex: 1; padding: 8px; border: none; border-radius: 5px; font-size: 11px; color: white; cursor: pointer; font-weight: bold; }
+        .btn-whatsapp { background: #25d366; }
+        .btn-concluir { background: var(--success); }
+        .btn-cancelar { background: var(--danger); }
+        
+        input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .item-list { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
     </style>
 </head>
 <body>
@@ -63,15 +65,16 @@
     <script type="text/babel">
         function App() {
             const [user, setUser] = React.useState(null);
-            const [aba, setAba] = React.useState("hoje");
+            const [aba, setAba] = React.useState("agenda");
             const [clientes, setClientes] = React.useState([]);
             const [pacotes, setPacotes] = React.useState([]);
             const [agendamentos, setAgendamentos] = React.useState([]);
-            const [dataFiltro, setDataFiltro] = React.useState(new Date());
-
-            // Estados dos formulários
-            const [formC, setFormC] = React.useState({ nome: "", sobrenome: "", whatsapp: "" });
-            const [formA, setFormA] = React.useState({ clienteId: "", pacoteId: "", dataHora: "", pago: "Pendente" });
+            
+            // Busca e Form
+            const [busca, setBusca] = React.useState("");
+            const [clienteSelecionado, setClienteSelecionado] = React.useState(null);
+            const [fPacote, setFPacote] = React.useState({ nome: "", valor: "" });
+            const [fAgenda, setFAgenda] = React.useState({ pacoteId: "", dataHora: "" });
 
             React.useEffect(() => {
                 window.api.onAuthStateChanged(window.auth, (u) => {
@@ -84,106 +87,114 @@
                 });
             }, []);
 
-            // Funções de Ação
-            const concluir = async (id) => await window.api.updateDoc(window.api.doc(window.db, "agendamentos", id), { realizado: true });
-            const cancelar = async (id) => confirm("Deseja cancelar?") && await window.api.deleteDoc(window.api.doc(window.db, "agendamentos", id));
-            const abrirZap = (tel) => window.open(`https://wa.me/55${tel.replace(/\D/g,'')}`, '_blank');
+            const clientesFiltrados = busca.length > 0 
+                ? clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) || c.whatsapp.includes(busca))
+                : [];
 
             const salvarAgendamento = async () => {
-                const cli = clientes.find(c => c.id === formA.clienteId);
-                const pac = pacotes.find(p => p.id === formA.pacoteId);
+                if(!clienteSelecionado || !fAgenda.pacoteId || !fAgenda.dataHora) return alert("Preencha tudo!");
+                const pac = pacotes.find(p => p.id === fAgenda.pacoteId);
                 await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
-                    ...formA,
-                    clienteNome: cli.nome + " " + cli.sobrenome,
-                    whatsapp: cli.whatsapp,
+                    clienteId: clienteSelecionado.id,
+                    clienteNome: clienteSelecionado.nome,
+                    whatsapp: clienteSelecionado.whatsapp,
                     servico: pac.nome,
                     valor: pac.valor,
+                    dataHora: fAgenda.dataHora,
                     realizado: false,
                     userId: user.uid
                 });
-                alert("Agendado!"); setAba("hoje");
+                setClienteSelecionado(null); setBusca(""); setAba("agenda");
             };
 
-            // Lógica do Calendário
-            const diasNoMes = new Date(dataFiltro.getFullYear(), dataFiltro.getMonth()+1, 0).getDate();
-            const diasArr = Array.from({length: diasNoMes}, (_, i) => i + 1);
+            const gradeHoraria = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-            const renderAgendamento = (a) => (
-                <div key={a.id} className={`card agenda-card ${a.realizado ? 'concluido' : ''}`}>
-                    <div style={{display:'flex', justifyContent:'space-between'}}>
-                        <b>{a.clienteNome}</b>
-                        <span style={{fontSize:'12px'}}>{new Date(a.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    <div style={{fontSize:'14px', color:'#555'}}>{a.servico} - R$ {a.valor}</div>
-                    <div style={{fontSize:'12px', color: '#888'}}>{new Date(a.dataHora).toLocaleDateString()}</div>
-                    
-                    <div className="btn-group">
-                        <button className="btn-action btn-zap" onClick={() => abrirZap(a.whatsapp)}>WhatsApp</button>
-                        {!a.realizado && <button className="btn-action btn-done" onClick={() => concluir(a.id)}>Concluir</button>}
-                        <button className="btn-action btn-cancel" onClick={() => cancelar(a.id)}>Cancelar</button>
-                    </div>
-                </div>
-            );
-
-            if (!user) return <div className="container"><div className="card"><h2>Login</h2><input placeholder="Email" id="le"/><input type="password" placeholder="Senha" id="ls"/><button onClick={() => window.api.signInWithEmailAndPassword(window.auth, document.getElementById('le').value, document.getElementById('ls').value)}>Entrar</button></div></div>;
+            if (!user) return <div className="container"><h2>Login</h2><input id="e" placeholder="Email"/><input id="s" type="password" placeholder="Senha"/><button onClick={() => window.api.signInWithEmailAndPassword(window.auth, document.getElementById('e').value, document.getElementById('s').value)}>Entrar</button></div>;
 
             return (
                 <div>
                     <div className="navbar">AGENDA PRO</div>
                     <div className="container">
                         <div className="tabs">
-                            <button className={aba==='hoje'?'active':''} onClick={()=>setAba('hoje')}>Semana</button>
-                            <button className={aba==='mes'?'active':''} onClick={()=>setAba('mes')}>Mensal</button>
-                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
+                            <button className={aba==='agenda'?'active':''} onClick={()=>setAba('agenda')}>Hoje</button>
+                            <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
+                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Agendar</button>
                         </div>
 
-                        {aba === 'hoje' && (
-                            <div>
-                                <h3>Atendimentos da Semana</h3>
-                                {agendamentos.filter(a => {
-                                    const diff = (new Date(a.dataHora) - new Date()) / (1000*60*60*24);
-                                    return diff >= -1 && diff <= 7;
-                                }).map(renderAgendamento)}
+                        {aba === 'agenda' && (
+                            <div className="card">
+                                <h3>Horários de Hoje</h3>
+                                {gradeHoraria.map(hora => {
+                                    const ag = agendamentos.find(a => new Date(a.dataHora).getHours() === hora && new Date(a.dataHora).toLocaleDateString() === new Date().toLocaleDateString());
+                                    return (
+                                        <div className="time-slot" key={hora}>
+                                            <div className="time-label">{hora}:00</div>
+                                            <div className="time-content">
+                                                {ag ? (
+                                                    <div className={`appointment ${ag.realizado ? 'done' : ''}`}>
+                                                        <b>{ag.clienteNome}</b> - {ag.servico}
+                                                        <div className="btn-group">
+                                                            <button className="btn-mini btn-whatsapp" onClick={()=>window.open(`https://wa.me/55${ag.whatsapp}`)}>Zap</button>
+                                                            {!ag.realizado && <button className="btn-mini btn-concluir" onClick={()=>window.api.updateDoc(window.api.doc(window.db, "agendamentos", ag.id), {realizado:true})}>OK</button>}
+                                                            <button className="btn-mini btn-cancelar" onClick={()=>window.api.deleteDoc(window.api.doc(window.db, "agendamentos", ag.id))}>X</button>
+                                                        </div>
+                                                    </div>
+                                                ) : <span style={{color:'#ccc', fontSize:'12px'}}>Livre</span>}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         )}
 
-                        {aba === 'mes' && (
-                            <div>
-                                <div className="cal-header">
-                                    <button onClick={() => setDataFiltro(new Date(dataFiltro.setMonth(dataFiltro.getMonth()-1)))}>&lt;</button>
-                                    <span>{dataFiltro.toLocaleString('pt-BR', {month:'long', year:'numeric'})}</span>
-                                    <button onClick={() => setDataFiltro(new Date(dataFiltro.setMonth(dataFiltro.getMonth()+1)))}>&gt;</button>
-                                </div>
-                                <div className="calendar-grid">
-                                    {diasArr.map(d => {
-                                        const temData = agendamentos.some(a => new Date(a.dataHora).getDate() === d && new Date(a.dataHora).getMonth() === dataFiltro.getMonth());
-                                        return <div key={d} className={`calendar-day ${temData?'has-event':''}`}>{d}</div>
-                                    })}
-                                </div>
+                        {aba === 'pacotes' && (
+                            <div className="card">
+                                <h3>Gerenciar Pacotes</h3>
+                                <input placeholder="Nome do Pacote" value={fPacote.nome} onChange={e=>setFPacote({...fPacote, nome:e.target.value})}/>
+                                <input placeholder="Preço R$" type="number" value={fPacote.valor} onChange={e=>setFPacote({...fPacote, valor:e.target.value})}/>
+                                <button onClick={async () => {
+                                    await window.api.addDoc(window.api.collection(window.db, "pacotes"), {...fPacote, userId: user.uid});
+                                    setFPacote({nome:"", valor:""});
+                                }}>Adicionar</button>
+                                <hr/>
+                                {pacotes.map(p => (
+                                    <div className="item-list" key={p.id}>
+                                        <span>{p.nome} - R$ {p.valor}</span>
+                                        <button style={{width:'auto', padding:'5px', background:'red', border:'none', color:'white', borderRadius:'4px'}} onClick={()=>window.api.deleteDoc(window.api.doc(window.db, "pacotes", p.id))}>Excluir</button>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
                         {aba === 'novo' && (
                             <div className="card">
-                                <h2>Novo Agendamento</h2>
-                                <select onChange={e => setFormA({...formA, clienteId: e.target.value})}>
-                                    <option>Selecione o Cliente</option>
-                                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nome} {c.sobrenome}</option>)}
-                                </select>
-                                <select onChange={e => setFormA({...formA, pacoteId: e.target.value})}>
+                                <h3>Novo Agendamento</h3>
+                                
+                                {!clienteSelecionado ? (
+                                    <>
+                                        <input placeholder="Buscar por Nome ou WhatsApp..." value={busca} onChange={e=>setBusca(e.target.value)} />
+                                        {clientesFiltrados.length > 0 && (
+                                            <div className="search-results">
+                                                {clientesFiltrados.map(c => (
+                                                    <div className="search-item" key={c.id} onClick={() => setClienteSelecionado(c)}>
+                                                        {c.nome} - ({c.whatsapp})
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="selected-client" onClick={() => setClienteSelecionado(null)}>
+                                        Cliente: {clienteSelecionado.nome} (Toque para trocar)
+                                    </div>
+                                )}
+
+                                <select onChange={e=>setFAgenda({...fAgenda, pacoteId:e.target.value})}>
                                     <option>Selecione o Pacote</option>
-                                    {pacotes.map(p => <option key={p.id} value={p.id}>{p.nome} (R$ {p.valor})</option>)}
+                                    {pacotes.map(p=><option key={p.id} value={p.id}>{p.nome} (R$ {p.valor})</option>)}
                                 </select>
-                                <input type="datetime-local" onChange={e => setFormA({...formA, dataHora: e.target.value})} />
-                                <button onClick={salvarAgendamento}>SALVAR</button>
-                                <hr/>
-                                <h3>Ou Cadastre Novo Cliente</h3>
-                                <input placeholder="Nome" onChange={e=>setFormC({...formC, nome: e.target.value})} />
-                                <input placeholder="WhatsApp" onChange={e=>setFormC({...formC, whatsapp: e.target.value})} />
-                                <button className="btn-done" onClick={async () => {
-                                    await window.api.addDoc(window.api.collection(window.db, "clientes"), {...formC, userId: user.uid});
-                                    alert("Cliente salvo!");
-                                }}>CADASTRAR CLIENTE</button>
+                                <input type="datetime-local" onChange={e=>setFAgenda({...fAgenda, dataHora:e.target.value})}/>
+                                <button className="btn-concluir" onClick={salvarAgendamento}>Salvar Agendamento</button>
                             </div>
                         )}
                     </div>
