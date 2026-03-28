@@ -8,16 +8,20 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        :root { --primary: #1a73e8; --bg: #f8f9fa; }
-        body { font-family: sans-serif; margin: 0; background: var(--bg); }
+        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); }
         .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; }
         .container { max-width: 500px; margin: auto; padding: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tabs button { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: #ddd; }
+        .tabs button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #ddd; }
         .tabs button.active { background: var(--primary); color: white; }
         input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button.main-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-cadastrar { background: #34a853; margin-top: 15px; }
+        .search-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; background: #fff; }
+        .search-item:hover { background: #f0f7ff; }
+        .selected-box { background: #e6f4ea; padding: 10px; border-radius: 8px; border: 1px solid #1e8e3e; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -25,64 +29,103 @@
 
     <script type="text/babel">
         function App() {
-            const [aba, setAba] = React.useState("agenda");
-            const [pacotes, setPacotes] = React.useState([]); // Aqui ficam seus pacotes (Maquiagem, Cabelo, etc)
-            const [fPacote, setFPacote] = React.useState({ nome: "", valor: "" });
+            const [aba, setAba] = React.useState("novo");
+            const [clientes, setClientes] = React.useState([]);
+            const [pacotes, setPacotes] = React.useState([]);
+            const [agendamentos, setAgendamentos] = React.useState([]);
+            
+            // Formulários
+            const [busca, setBusca] = React.useState("");
+            const [cliSel, setCliSel] = React.useState(null);
+            const [fCli, setFCli] = React.useState({ nome: "", whatsapp: "" });
+            const [fPac, setFPac] = React.useState({ nome: "", valor: "" });
+            const [fAge, setFAge] = React.useState({ pacoteId: "", dataHora: "" });
 
-            // Função para adicionar pacote
-            const adicionarPacote = () => {
-                if(!fPacote.nome || !fPacote.valor) return alert("Preencha o nome e valor!");
-                setPacotes([...pacotes, { id: Date.now(), ...fPacote }]);
-                setFPacote({ nome: "", valor: "" });
-                alert("Pacote salvo com sucesso!");
+            // Simulação de banco de dados (Você deve conectar ao seu Firebase depois)
+            const cadastrarCliente = () => {
+                if(!fCli.nome) return alert("Digite o nome");
+                const novo = { id: Date.now(), ...fCli };
+                setClientes([...clientes, novo]);
+                setFCli({ nome: "", whatsapp: "" });
+                alert("Cliente cadastrado!");
             };
+
+            const salvarAgendamento = () => {
+                if(!cliSel || !fAge.pacoteId) return alert("Selecione o cliente e o pacote!");
+                const p = pacotes.find(x => x.id == fAge.pacoteId);
+                const novoAge = { id: Date.now(), cliente: cliSel.nome, servico: p.nome, valor: p.valor, data: fAge.dataHora };
+                setAgendamentos([...agendamentos, novoAge]);
+                setCliSel(null); setBusca("");
+                alert("Agendado com sucesso!");
+            };
+
+            const cliFiltrados = busca ? clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())) : [];
 
             return (
                 <div>
                     <div className="navbar">AGENDA PRO</div>
                     <div className="container">
                         <div className="tabs">
-                            <button className={aba==='agenda'?'active':''} onClick={()=>setAba('agenda')}>Hoje</button>
+                            <button className={aba==='hoje'?'active':''} onClick={()=>setAba('hoje')}>Hoje</button>
                             <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
                             <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
                         </div>
 
-                        {aba === 'pacotes' && (
+                        {aba === 'novo' && (
                             <div className="card">
-                                <h3>Gerenciar Pacotes</h3>
-                                <input 
-                                    placeholder="Nome do Pacote (Ex: Maquiagem)" 
-                                    value={fPacote.nome}
-                                    onChange={e => setFPacote({...fPacote, nome: e.target.value})}
-                                />
-                                <input 
-                                    placeholder="Valor R$" 
-                                    type="number"
-                                    value={fPacote.valor}
-                                    onChange={e => setFPacote({...fPacote, valor: e.target.value})}
-                                />
-                                <button className="main-btn" onClick={adicionarPacote}>ADICIONAR PACOTE</button>
+                                <h3>Fazer Agendamento</h3>
+                                {!cliSel ? (
+                                    <>
+                                        <input placeholder="Buscar cliente por nome..." value={busca} onChange={e=>setBusca(e.target.value)} />
+                                        {cliFiltrados.map(c => (
+                                            <div key={c.id} className="search-item" onClick={()=>setCliSel(c)}>{c.nome}</div>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <div className="selected-box" onClick={()=>setCliSel(null)}>Cliente: {cliSel.nome} (Trocar)</div>
+                                )}
                                 
-                                <div style={{marginTop: '20px'}}>
-                                    <h4>Meus Serviços:</h4>
-                                    {pacotes.map(p => (
-                                        <div key={p.id} style={{display:'flex', justifyContent:'space-between', padding:'10px', borderBottom:'1px solid #eee'}}>
-                                            <span>{p.nome}</span>
-                                            <b>R$ {p.valor}</b>
-                                        </div>
-                                    ))}
-                                </div>
+                                <select onChange={e=>setFAge({...fAge, pacoteId: e.target.value})}>
+                                    <option>Selecione o Pacote</option>
+                                    {pacotes.map(p => <option key={p.id} value={p.id}>{p.nome} - R${p.valor}</option>)}
+                                </select>
+                                <input type="datetime-local" onChange={e=>setFAge({...fAge, dataHora: e.target.value})} />
+                                <button onClick={salvarAgendamento}>SALVAR AGENDAMENTO</button>
+
+                                <hr style={{margin:'20px 0'}} />
+                                
+                                <h3>Cadastrar Novo Cliente</h3>
+                                <input placeholder="Nome" value={fCli.nome} onChange={e=>setFCli({...fCli, nome: e.target.value})} />
+                                <input placeholder="WhatsApp" value={fCli.whatsapp} onChange={e=>setFCli({...fCli, whatsapp: e.target.value})} />
+                                <button className="btn-cadastrar" onClick={cadastrarCliente}>CADASTRAR CLIENTE</button>
                             </div>
                         )}
 
-                        {aba === 'agenda' && <div className="card"><h3>Seus horários aparecerão aqui.</h3></div>}
-                        {aba === 'novo' && <div className="card"><h3>Tela de agendamento.</h3></div>}
+                        {aba === 'pacotes' && (
+                            <div className="card">
+                                <h3>Adicionar Pacote</h3>
+                                <input placeholder="Ex: Maquiagem" value={fPac.nome} onChange={e=>setFPac({...fPac, nome: e.target.value})} />
+                                <input placeholder="Valor R$" type="number" value={fPac.valor} onChange={e=>setFPac({...fPac, valor: e.target.value})} />
+                                <button onClick={()=>{setPacotes([...pacotes, {id:Date.now(), ...fPac}]); setFPac({nome:"", valor:""})}}>SALVAR PACOTE</button>
+                            </div>
+                        )}
+                        
+                        {aba === 'hoje' && (
+                            <div className="card">
+                                <h3>Agendamentos</h3>
+                                {agendamentos.map(a => (
+                                    <div key={a.id} style={{padding:'10px', borderBottom:'1px solid #eee'}}>
+                                        <b>{a.cliente}</b> - {a.servico} <br/>
+                                        <small>{a.data}</small>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
         }
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
