@@ -1,68 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Business PRO</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); }
-        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top:0; z-index:100; }
-        .container { max-width: 600px; margin: auto; padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tabs button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #ddd; }
-        .tabs button.active { background: var(--primary); color: white; }
-
-        .search-results { border: 1px solid #ddd; border-radius: 8px; max-height: 150px; overflow-y: auto; background: white; margin-top: -5px; margin-bottom: 10px; }
-        .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px; }
-        .search-item:hover { background: #f0f7ff; }
-        .selected-client { background: #e6f4ea; padding: 10px; border-radius: 8px; border: 1px solid #1e8e3e; margin-bottom: 10px; font-weight: bold; }
-
-        .time-slot { display: flex; border-bottom: 1px solid #eee; min-height: 80px; background: white; }
-        .time-label { width: 60px; padding: 10px; font-weight: bold; color: var(--primary); border-right: 2px solid var(--primary); display: flex; align-items: center; }
-        .time-content { flex: 1; padding: 10px; }
-        .appointment { background: #eef4ff; border-radius: 8px; padding: 10px; border-left: 5px solid var(--primary); }
-        .appointment.done { border-left-color: var(--success); background: #e6f4ea; }
-
-        .btn-group { display: flex; gap: 5px; margin-top: 10px; }
-        .btn-mini { flex: 1; padding: 8px; border: none; border-radius: 5px; font-size: 11px; color: white; cursor: pointer; font-weight: bold; }
-        .btn-whatsapp { background: #25d366; }
-        .btn-concluir { background: var(--success); }
-        .btn-cancelar { background: var(--danger); }
-        
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .item-list { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
-            authDomain: "agenda-6b09e.firebaseapp.com",
-            projectId: "agenda-6b09e",
-            storageBucket: "agenda-6b09e.firebasestorage.app",
-            messagingSenderId: "848846524028",
-            appId: "1:848846524028:web:2fdc1fba17859d79edc3f9"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        window.auth = getAuth(app);
-        window.db = getFirestore(app);
-        window.api = { signInWithEmailAndPassword, signOut, addDoc, collection, query, onSnapshot, where, doc, updateDoc, deleteDoc, onAuthStateChanged };
-    </script>
-
-    <script type="text/babel">
+<script type="text/babel">
         function App() {
             const [user, setUser] = React.useState(null);
             const [aba, setAba] = React.useState("agenda");
@@ -70,7 +6,7 @@
             const [pacotes, setPacotes] = React.useState([]);
             const [agendamentos, setAgendamentos] = React.useState([]);
             
-            // Busca e Form
+            // Estados para os formulários
             const [busca, setBusca] = React.useState("");
             const [clienteSelecionado, setClienteSelecionado] = React.useState(null);
             const [fPacote, setFPacote] = React.useState({ nome: "", valor: "" });
@@ -80,6 +16,7 @@
                 window.api.onAuthStateChanged(window.auth, (u) => {
                     setUser(u);
                     if (u) {
+                        // Busca dados do banco de dados que você configurou (conforme sua imagem do Cloud Firestore)
                         window.api.onSnapshot(window.api.query(window.api.collection(window.db, "clientes"), window.api.where("userId", "==", u.uid)), s => setClientes(s.docs.map(d => ({id:d.id, ...d.data()}))));
                         window.api.onSnapshot(window.api.query(window.api.collection(window.db, "pacotes"), window.api.where("userId", "==", u.uid)), s => setPacotes(s.docs.map(d => ({id:d.id, ...d.data()}))));
                         window.api.onSnapshot(window.api.query(window.api.collection(window.db, "agendamentos"), window.api.where("userId", "==", u.uid)), s => setAgendamentos(s.docs.map(d => ({id:d.id, ...d.data()}))));
@@ -87,29 +24,16 @@
                 });
             }, []);
 
-            const clientesFiltrados = busca.length > 0 
-                ? clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) || c.whatsapp.includes(busca))
-                : [];
-
-            const salvarAgendamento = async () => {
-                if(!clienteSelecionado || !fAgenda.pacoteId || !fAgenda.dataHora) return alert("Preencha tudo!");
-                const pac = pacotes.find(p => p.id === fAgenda.pacoteId);
-                await window.api.addDoc(window.api.collection(window.db, "agendamentos"), {
-                    clienteId: clienteSelecionado.id,
-                    clienteNome: clienteSelecionado.nome,
-                    whatsapp: clienteSelecionado.whatsapp,
-                    servico: pac.nome,
-                    valor: pac.valor,
-                    dataHora: fAgenda.dataHora,
-                    realizado: false,
-                    userId: user.uid
+            // Salva um novo pacote de serviço
+            const salvarPacote = async () => {
+                if(!fPacote.nome || !fPacote.valor) return alert("Preencha o nome e o valor do pacote");
+                await window.api.addDoc(window.api.collection(window.db, "pacotes"), { 
+                    ...fPacote, 
+                    userId: user.uid 
                 });
-                setClienteSelecionado(null); setBusca(""); setAba("agenda");
+                setFPacote({ nome: "", valor: "" });
+                alert("Pacote adicionado com sucesso!");
             };
-
-            const gradeHoraria = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-
-            if (!user) return <div className="container"><h2>Login</h2><input id="e" placeholder="Email"/><input id="s" type="password" placeholder="Senha"/><button onClick={() => window.api.signInWithEmailAndPassword(window.auth, document.getElementById('e').value, document.getElementById('s').value)}>Entrar</button></div>;
 
             return (
                 <div>
@@ -117,91 +41,50 @@
                     <div className="container">
                         <div className="tabs">
                             <button className={aba==='agenda'?'active':''} onClick={()=>setAba('agenda')}>Hoje</button>
+                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
                             <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
-                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Agendar</button>
                         </div>
 
-                        {aba === 'agenda' && (
-                            <div className="card">
-                                <h3>Horários de Hoje</h3>
-                                {gradeHoraria.map(hora => {
-                                    const ag = agendamentos.find(a => new Date(a.dataHora).getHours() === hora && new Date(a.dataHora).toLocaleDateString() === new Date().toLocaleDateString());
-                                    return (
-                                        <div className="time-slot" key={hora}>
-                                            <div className="time-label">{hora}:00</div>
-                                            <div className="time-content">
-                                                {ag ? (
-                                                    <div className={`appointment ${ag.realizado ? 'done' : ''}`}>
-                                                        <b>{ag.clienteNome}</b> - {ag.servico}
-                                                        <div className="btn-group">
-                                                            <button className="btn-mini btn-whatsapp" onClick={()=>window.open(`https://wa.me/55${ag.whatsapp}`)}>Zap</button>
-                                                            {!ag.realizado && <button className="btn-mini btn-concluir" onClick={()=>window.api.updateDoc(window.api.doc(window.db, "agendamentos", ag.id), {realizado:true})}>OK</button>}
-                                                            <button className="btn-mini btn-cancelar" onClick={()=>window.api.deleteDoc(window.api.doc(window.db, "agendamentos", ag.id))}>X</button>
-                                                        </div>
-                                                    </div>
-                                                ) : <span style={{color:'#ccc', fontSize:'12px'}}>Livre</span>}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        )}
-
+                        {/* ABA DE GERENCIAR PACOTES (A que você pediu) */}
                         {aba === 'pacotes' && (
                             <div className="card">
-                                <h3>Gerenciar Pacotes</h3>
-                                <input placeholder="Nome do Pacote" value={fPacote.nome} onChange={e=>setFPacote({...fPacote, nome:e.target.value})}/>
-                                <input placeholder="Preço R$" type="number" value={fPacote.valor} onChange={e=>setFPacote({...fPacote, valor:e.target.value})}/>
-                                <button onClick={async () => {
-                                    await window.api.addDoc(window.api.collection(window.db, "pacotes"), {...fPacote, userId: user.uid});
-                                    setFPacote({nome:"", valor:""});
-                                }}>Adicionar</button>
-                                <hr/>
-                                {pacotes.map(p => (
-                                    <div className="item-list" key={p.id}>
-                                        <span>{p.nome} - R$ {p.valor}</span>
-                                        <button style={{width:'auto', padding:'5px', background:'red', border:'none', color:'white', borderRadius:'4px'}} onClick={()=>window.api.deleteDoc(window.api.doc(window.db, "pacotes", p.id))}>Excluir</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {aba === 'novo' && (
-                            <div className="card">
-                                <h3>Novo Agendamento</h3>
+                                <h3>Adicionar Novo Pacote</h3>
+                                <p style={{fontSize: '12px', color: '#666'}}>Cadastre aqui seus serviços (Ex: Maquiagem, Cabelo + Make)</p>
                                 
-                                {!clienteSelecionado ? (
-                                    <>
-                                        <input placeholder="Buscar por Nome ou WhatsApp..." value={busca} onChange={e=>setBusca(e.target.value)} />
-                                        {clientesFiltrados.length > 0 && (
-                                            <div className="search-results">
-                                                {clientesFiltrados.map(c => (
-                                                    <div className="search-item" key={c.id} onClick={() => setClienteSelecionado(c)}>
-                                                        {c.nome} - ({c.whatsapp})
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="selected-client" onClick={() => setClienteSelecionado(null)}>
-                                        Cliente: {clienteSelecionado.nome} (Toque para trocar)
-                                    </div>
-                                )}
-
-                                <select onChange={e=>setFAgenda({...fAgenda, pacoteId:e.target.value})}>
-                                    <option>Selecione o Pacote</option>
-                                    {pacotes.map(p=><option key={p.id} value={p.id}>{p.nome} (R$ {p.valor})</option>)}
-                                </select>
-                                <input type="datetime-local" onChange={e=>setFAgenda({...fAgenda, dataHora:e.target.value})}/>
-                                <button className="btn-concluir" onClick={salvarAgendamento}>Salvar Agendamento</button>
+                                <input 
+                                    placeholder="Nome do Pacote" 
+                                    value={fPacote.nome} 
+                                    onChange={e=>setFPacote({...fPacote, nome:e.target.value})}
+                                />
+                                <input 
+                                    placeholder="Valor R$" 
+                                    type="number" 
+                                    value={fPacote.valor} 
+                                    onChange={e=>setFPacote({...fPacote, valor:e.target.value})}
+                                />
+                                <button onClick={salvarPacote} style={{background: '#34a853'}}>SALVAR PACOTE</button>
+                                
+                                <hr style={{margin: '20px 0'}}/>
+                                
+                                <h3>Seus Pacotes Atuais</h3>
+                                {pacotes.length === 0 ? <p>Nenhum pacote cadastrado.</p> : 
+                                    pacotes.map(p => (
+                                        <div key={p.id} className="item-list" style={{display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid #eee'}}>
+                                            <span>{p.nome} - <b>R$ {p.valor}</b></span>
+                                            <button 
+                                                style={{width: 'auto', padding: '5px 10px', background: '#ea4335', fontSize: '10px'}}
+                                                onClick={() => window.api.deleteDoc(window.api.doc(window.db, "pacotes", p.id))}
+                                            > Excluir </button>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         )}
+
+                        {/* ... (mantenha o código das abas 'agenda' e 'novo' que já funcionam) ... */}
                     </div>
                 </div>
             );
         }
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
-</body>
-</html>
