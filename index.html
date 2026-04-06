@@ -27,22 +27,22 @@
 
     <div id="tela-inicio" class="card">
         <h2>📚 Sistema de Quiz</h2>
-        <button onclick="irPara('tela-senha-prof')">👨‍🏫 Painel do Professor</button>
-        <button onclick="irPara('tela-login-aluno')" style="background: var(--secondary);">🎓 Área do Aluno</button>
+        <button id="btnIrSenhaProf">👨‍🏫 Painel do Professor</button>
+        <button id="btnIrLoginAluno" style="background: var(--secondary);">🎓 Área do Aluno</button>
     </div>
 
     <div id="tela-senha-prof" class="card hidden">
-        <button class="btn-voltar" onclick="irPara('tela-inicio')">← Voltar</button>
+        <button class="btn-voltar" id="btnVoltarInicio1">← Voltar</button>
         <h3>Acesso Restrito</h3>
         <input type="password" id="inputSenha" placeholder="Senha do Professor">
-        <button onclick="verificarSenha()">Entrar</button>
+        <button id="btnCheckSenha">Entrar</button>
     </div>
 
     <div id="tela-admin" class="card hidden">
-        <button class="btn-voltar" onclick="irPara('tela-inicio')">← Sair</button>
+        <button class="btn-voltar" id="btnSairAdmin">← Sair</button>
         <div class="admin-tabs">
-            <button id="tab-disc" class="active" onclick="mudarAba('disc')">Disciplinas</button>
-            <button id="tab-quest" onclick="mudarAba('quest')">Questões</button>
+            <button id="tab-disc" class="active">Disciplinas</button>
+            <button id="tab-quest">Questões</button>
         </div>
 
         <div id="aba-disc">
@@ -58,7 +58,7 @@
             <form id="form-pergunta">
                 <select id="selDiscProf" required><option value="">Carregando...</option></select>
                 <textarea id="txtQuestao" placeholder="Pergunta..." required></textarea>
-                <select id="tipoQ" onchange="toggleCampos(this.value)">
+                <select id="tipoQ" id="tipoQ">
                     <option value="VF">Verdadeiro ou Falso</option>
                     <option value="AE">Múltipla Escolha</option>
                 </select>
@@ -74,8 +74,7 @@
 
             <div class="secao-lista">
                 <h3>Gerenciar Questões</h3>
-                <p style="font-size: 0.8rem; color: #666; text-align: center;">Selecione a disciplina para ver as questões:</p>
-                <select id="filtroQuestaoProf" onchange="carregarQuestoesPorDisc(this.value)">
+                <select id="filtroQuestaoProf">
                     <option value="">Escolha uma disciplina...</option>
                 </select>
                 <div id="lista-questoes" style="margin-top: 15px;"></div>
@@ -84,7 +83,7 @@
     </div>
 
     <div id="tela-login-aluno" class="card hidden">
-        <button class="btn-voltar" onclick="irPara('tela-inicio')">← Voltar</button>
+        <button class="btn-voltar" id="btnVoltarInicio2">← Voltar</button>
         <h2>Entrar no Quiz</h2>
         <input type="text" id="nomeAluno" placeholder="Seu Nome">
         <select id="selDiscAluno"><option value="">Carregando Disciplinas...</option></select>
@@ -108,4 +107,167 @@
             projectId: "agenda-6b09e",
             storageBucket: "agenda-6b09e.firebasestorage.app",
             messagingSenderId: "848846524028",
-            appId: "1:848846524028:web
+            appId: "1:848846524028:web:8ba492a2cffcec35edc3f9",
+            measurementId: "G-4WE86DXSSZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- FUNÇÕES DE NAVEGAÇÃO ---
+        const irPara = (id) => {
+            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
+
+        // Atribuição de eventos (forma mais segura para módulos)
+        document.getElementById('btnIrSenhaProf').onclick = () => irPara('tela-senha-prof');
+        document.getElementById('btnIrLoginAluno').onclick = () => irPara('tela-login-aluno');
+        document.getElementById('btnVoltarInicio1').onclick = () => irPara('tela-inicio');
+        document.getElementById('btnVoltarInicio2').onclick = () => irPara('tela-inicio');
+        document.getElementById('btnSairAdmin').onclick = () => irPara('tela-inicio');
+
+        document.getElementById('btnCheckSenha').onclick = () => {
+            if(document.getElementById('inputSenha').value === "1234567") irPara('tela-admin');
+            else alert("Senha Errada!");
+            document.getElementById('inputSenha').value = "";
+        };
+
+        const mudarAba = (aba) => {
+            document.getElementById('aba-disc').classList.toggle('hidden', aba !== 'disc');
+            document.getElementById('aba-quest').classList.toggle('hidden', aba !== 'quest');
+            document.getElementById('tab-disc').classList.toggle('active', aba === 'disc');
+            document.getElementById('tab-quest').classList.toggle('active', aba === 'quest');
+        };
+
+        document.getElementById('tab-disc').onclick = () => mudarAba('disc');
+        document.getElementById('tab-quest').onclick = () => mudarAba('quest');
+
+        const toggleCampos = (v) => {
+            const resC = document.getElementById('resCorreta');
+            document.getElementById('campos-ae').classList.toggle('hidden', v === 'VF');
+            resC.innerHTML = "";
+            const itens = v === 'VF' ? ['Verdadeiro', 'Falso'] : ['A','B','C','D','E'];
+            itens.forEach(i => {
+                let opt = document.createElement('option');
+                opt.value = i; opt.text = i;
+                resC.appendChild(opt);
+            });
+        };
+        document.getElementById('tipoQ').onchange = (e) => toggleCampos(e.target.value);
+        toggleCampos('VF');
+
+        // --- FIREBASE LOGIC ---
+        let dGlobal = [];
+        onSnapshot(collection(db, "disciplinas"), (s) => {
+            dGlobal = s.docs.map(d => ({id: d.id, ...d.data()}));
+            const listaD = document.getElementById('lista-disciplinas');
+            listaD.innerHTML = "";
+            dGlobal.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'lista-item';
+                div.innerHTML = `<span>${d.nome}</span>`;
+                const btn = document.createElement('button');
+                btn.className = 'btn-del'; btn.innerText = 'X';
+                btn.onclick = () => delDoc('disciplinas', d.id);
+                div.appendChild(btn);
+                listaD.appendChild(div);
+            });
+            
+            const options = '<option value="">Selecione...</option>' + dGlobal.map(d => `<option value="${d.id}">${d.nome}</option>`).join('');
+            document.getElementById('selDiscProf').innerHTML = options;
+            document.getElementById('selDiscAluno').innerHTML = options;
+            document.getElementById('filtroQuestaoProf').innerHTML = '<option value="">Escolha uma disciplina...</option>' + dGlobal.map(d => `<option value="${d.id}">${d.nome}</option>`).join('');
+        });
+
+        const delDoc = async (col, id) => { if(confirm("Excluir?")) await deleteDoc(doc(db, col, id)); };
+        window.delDoc = delDoc; // Expor apenas esta para o clique dinâmico
+
+        document.getElementById('addDisc').onclick = async () => {
+            const nome = document.getElementById('novaDisc').value;
+            if(nome) await addDoc(collection(db,"disciplinas"), {nome});
+            document.getElementById('novaDisc').value = "";
+        };
+
+        // GERENCIAR QUESTÕES
+        let unsubscribeQuest = null;
+        document.getElementById('filtroQuestaoProf').onchange = (e) => {
+            const discId = e.target.value;
+            const listaContainer = document.getElementById('lista-questoes');
+            if(!discId) { listaContainer.innerHTML = ""; return; }
+            if(unsubscribeQuest) unsubscribeQuest();
+
+            const q = query(collection(db, "quiz_perguntas"), where("discId", "==", discId));
+            unsubscribeQuest = onSnapshot(q, (s) => {
+                listaContainer.innerHTML = "";
+                if(s.empty) { listaContainer.innerHTML = "<p>Nenhuma questão.</p>"; return; }
+                s.docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const div = document.createElement('div');
+                    div.className = 'lista-item';
+                    div.innerHTML = `<span style="font-size:0.8rem">${data.texto}</span>`;
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-del'; btn.innerText = 'X';
+                    btn.onclick = () => delDoc('quiz_perguntas', docSnap.id);
+                    div.appendChild(btn);
+                    listaContainer.appendChild(div);
+                });
+            });
+        };
+
+        document.getElementById('form-pergunta').onsubmit = async (e) => {
+            e.preventDefault();
+            const p = {
+                discId: document.getElementById('selDiscProf').value,
+                texto: document.getElementById('txtQuestao').value,
+                tipo: document.getElementById('tipoQ').value,
+                correta: document.getElementById('resCorreta').value,
+                data: Date.now()
+            };
+            if(p.tipo === 'AE') p.opts = { A: document.getElementById('oA').value, B: document.getElementById('oB').value, C: document.getElementById('oC').value, D: document.getElementById('oD').value, E: document.getElementById('oE').value };
+            await addDoc(collection(db, "quiz_perguntas"), p);
+            e.target.reset(); toggleCampos('VF');
+            alert("Questão salva!");
+        };
+
+        // --- JOGO ---
+        let fila = [], pAtual = null, pts = 0;
+        document.getElementById('btnPlay').onclick = async () => {
+            const dId = document.getElementById('selDiscAluno').value;
+            if(!dId) return alert("Escolha a matéria!");
+            pts = 0; document.getElementById('lPontos').innerText = pts;
+            document.getElementById('lNome').innerText = document.getElementById('nomeAluno').value;
+            const q = query(collection(db, "quiz_perguntas"), where("discId", "==", dId));
+            const s = await getDocs(q);
+            fila = s.docs.map(d => d.data()).sort(() => Math.random() - 0.5);
+            if(!fila.length) return alert("Sem questões!");
+            irPara('tela-jogo'); proxima();
+        };
+
+        function proxima() {
+            if(!fila.length) { document.getElementById('qTexto').innerText = "Fim! Total: " + pts; document.getElementById('opcoesContainer').innerHTML = ""; return; }
+            pAtual = fila.shift();
+            document.getElementById('qTexto').innerText = pAtual.texto;
+            const cont = document.getElementById('opcoesContainer'); cont.innerHTML = "";
+            const itens = pAtual.tipo === 'VF' ? ['Verdadeiro', 'Falso'] : ['A','B','C','D','E'];
+            itens.forEach(i => {
+                const b = document.createElement('button'); b.className = "btn-opcao";
+                b.innerText = pAtual.tipo === 'AE' ? `${i}) ${pAtual.opts[i]}` : i;
+                b.onclick = () => {
+                    document.querySelectorAll('.btn-opcao').forEach(x => x.disabled = true);
+                    if(i === pAtual.correta) { b.style.background = "var(--secondary)"; b.style.color="white"; pts += 10; }
+                    else { 
+                        b.style.background = "var(--error)"; b.style.color="white";
+                        fila.splice(Math.floor(Math.random() * fila.length), 0, pAtual);
+                    }
+                    document.getElementById('lPontos').innerText = pts;
+                    document.getElementById('btnNext').classList.remove('hidden');
+                };
+                cont.appendChild(b);
+            });
+            document.getElementById('btnNext').classList.add('hidden');
+        }
+        document.getElementById('btnNext').onclick = proxima;
+    </script>
+</body>
+</html>
