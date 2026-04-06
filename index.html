@@ -20,6 +20,7 @@
         .btn-del { background: var(--error); width: auto; padding: 5px 10px; font-size: 0.8rem; }
         .btn-opcao { background: #f8f9fa; color: #212529; text-align: left; border: 1px solid #dee2e6; margin-bottom: 8px; }
         .placar { display: flex; justify-content: space-between; font-weight: bold; background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; color: var(--primary); }
+        .secao-lista { margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
@@ -46,13 +47,14 @@
 
         <div id="aba-disc">
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="novaDisc" placeholder="Nome da Disciplina">
+                <input type="text" id="novaDisc" placeholder="Nova Disciplina">
                 <button id="addDisc" style="width: 100px; background: var(--secondary);">Add</button>
             </div>
             <div id="lista-disciplinas" style="margin-top: 15px;"></div>
         </div>
 
         <div id="aba-quest" class="hidden">
+            <h3>Adicionar Nova Questão</h3>
             <form id="form-pergunta">
                 <select id="selDiscProf" required><option value="">Carregando...</option></select>
                 <textarea id="txtQuestao" placeholder="Pergunta..." required></textarea>
@@ -69,7 +71,15 @@
                 <select id="resCorreta"></select>
                 <button type="submit" style="background: var(--secondary);">Salvar Questão</button>
             </form>
-            <div id="lista-questoes" style="margin-top: 15px;"></div>
+
+            <div class="secao-lista">
+                <h3>Gerenciar Questões</h3>
+                <p style="font-size: 0.8rem; color: #666; text-align: center;">Selecione a disciplina para ver as questões:</p>
+                <select id="filtroQuestaoProf" onchange="carregarQuestoesPorDisc(this.value)">
+                    <option value="">Escolha uma disciplina...</option>
+                </select>
+                <div id="lista-questoes" style="margin-top: 15px;"></div>
+            </div>
         </div>
     </div>
 
@@ -92,131 +102,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // CONFIGURAÇÃO COM SUAS CHAVES
         const firebaseConfig = {
             apiKey: "AIzaSyCFv7bxfdGMg2y7YsVkATK_sqtFhx4g-lg",
             authDomain: "agenda-6b09e.firebaseapp.com",
             projectId: "agenda-6b09e",
             storageBucket: "agenda-6b09e.firebasestorage.app",
             messagingSenderId: "848846524028",
-            appId: "1:848846524028:web:8ba492a2cffcec35edc3f9",
-            measurementId: "G-4WE86DXSSZ"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // NAVEGAÇÃO
-        window.irPara = (id) => {
-            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        };
-
-        window.verificarSenha = () => {
-            if(document.getElementById('inputSenha').value === "1234567") irPara('tela-admin');
-            else alert("Senha Errada!");
-            document.getElementById('inputSenha').value = "";
-        };
-
-        window.mudarAba = (aba) => {
-            document.getElementById('aba-disc').classList.toggle('hidden', aba !== 'disc');
-            document.getElementById('aba-quest').classList.toggle('hidden', aba !== 'quest');
-            document.getElementById('tab-disc').classList.toggle('active', aba === 'disc');
-            document.getElementById('tab-quest').classList.toggle('active', aba === 'quest');
-        };
-
-        window.toggleCampos = (v) => {
-            const resC = document.getElementById('resCorreta');
-            document.getElementById('campos-ae').classList.toggle('hidden', v === 'VF');
-            resC.innerHTML = "";
-            const itens = v === 'VF' ? ['Verdadeiro', 'Falso'] : ['A','B','C','D','E'];
-            itens.forEach(i => resC.innerHTML += `<option value="${i}">${i}</option>`);
-        };
-        toggleCampos('VF');
-
-        // FIREBASE - DISCIPLINAS
-        let dGlobal = [];
-        onSnapshot(collection(db, "disciplinas"), (s) => {
-            dGlobal = s.docs.map(d => ({id: d.id, ...d.data()}));
-            const html = dGlobal.map(d => `<div class="lista-item"><span>${d.nome}</span><button class="btn-del" onclick="delDoc('disciplinas','${d.id}')">X</button></div>`).join('');
-            document.getElementById('lista-disciplinas').innerHTML = html;
-            
-            const options = '<option value="">Selecione...</option>' + dGlobal.map(d => `<option value="${d.id}">${d.nome}</option>`).join('');
-            document.getElementById('selDiscProf').innerHTML = options;
-            document.getElementById('selDiscAluno').innerHTML = options;
-        });
-
-        window.delDoc = async (col, id) => { if(confirm("Excluir?")) await deleteDoc(doc(db, col, id)); };
-
-        document.getElementById('addDisc').onclick = async () => {
-            const nome = document.getElementById('novaDisc').value;
-            if(nome) await addDoc(collection(db,"disciplinas"), {nome});
-            document.getElementById('novaDisc').value = "";
-        };
-
-        // FIREBASE - QUESTÕES
-        onSnapshot(query(collection(db, "quiz_perguntas"), orderBy("data", "desc")), (s) => {
-            const html = s.docs.map(docSnap => {
-                const q = docSnap.data();
-                const dNome = dGlobal.find(d => d.id === q.discId)?.nome || "...";
-                return `<div class="lista-item" style="font-size:0.8rem"><span><b>[${dNome}]</b> ${q.texto}</span><button class="btn-del" onclick="delDoc('quiz_perguntas','${docSnap.id}')">X</button></div>`;
-            }).join('');
-            document.getElementById('lista-questoes').innerHTML = html;
-        });
-
-        document.getElementById('form-pergunta').onsubmit = async (e) => {
-            e.preventDefault();
-            const p = {
-                discId: document.getElementById('selDiscProf').value,
-                texto: document.getElementById('txtQuestao').value,
-                tipo: document.getElementById('tipoQ').value,
-                correta: document.getElementById('resCorreta').value,
-                data: Date.now()
-            };
-            if(p.tipo === 'AE') p.opts = { A: document.getElementById('oA').value, B: document.getElementById('oB').value, C: document.getElementById('oC').value, D: document.getElementById('oD').value, E: document.getElementById('oE').value };
-            await addDoc(collection(db, "quiz_perguntas"), p);
-            e.target.reset(); toggleCampos('VF');
-        };
-
-        // LÓGICA DO JOGO (EMBARALHAR E REPETIR ERROS)
-        let fila = [], pAtual = null, pts = 0;
-
-        document.getElementById('btnPlay').onclick = async () => {
-            const dId = document.getElementById('selDiscAluno').value;
-            if(!dId) return alert("Escolha a matéria!");
-            pts = 0; document.getElementById('lPontos').innerText = pts;
-            document.getElementById('lNome').innerText = document.getElementById('nomeAluno').value;
-            
-            const q = query(collection(db, "quiz_perguntas"), where("discId", "==", dId));
-            const s = await getDocs(q);
-            fila = s.docs.map(d => d.data()).sort(() => Math.random() - 0.5);
-            irPara('tela-jogo'); proxima();
-        };
-
-        function proxima() {
-            if(!fila.length) { document.getElementById('qTexto').innerText = "Fim! Total: " + pts; document.getElementById('opcoesContainer').innerHTML = ""; return; }
-            pAtual = fila.shift();
-            document.getElementById('qTexto').innerText = pAtual.texto;
-            const cont = document.getElementById('opcoesContainer'); cont.innerHTML = "";
-            const itens = pAtual.tipo === 'VF' ? ['Verdadeiro', 'Falso'] : ['A','B','C','D','E'];
-            itens.forEach(i => {
-                const b = document.createElement('button'); b.className = "btn-opcao";
-                b.innerText = pAtual.tipo === 'AE' ? `${i}) ${pAtual.opts[i]}` : i;
-                b.onclick = () => {
-                    document.querySelectorAll('.btn-opcao').forEach(x => x.disabled = true);
-                    if(i === pAtual.correta) { b.style.background = "var(--secondary)"; b.style.color="white"; pts += 10; }
-                    else { 
-                        b.style.background = "var(--error)"; b.style.color="white";
-                        fila.splice(Math.floor(Math.random() * fila.length), 0, pAtual); // Reinsere em lugar aleatório
-                    }
-                    document.getElementById('lPontos').innerText = pts;
-                    document.getElementById('btnNext').classList.remove('hidden');
-                };
-                cont.appendChild(b);
-            });
-            document.getElementById('btnNext').classList.add('hidden');
-        }
-        document.getElementById('btnNext').onclick = proxima;
-    </script>
-</body>
-</html>
+            appId: "1:848846524028:web
