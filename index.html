@@ -3,37 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Gamificado</title>
+    <title>Quiz Acadêmico Pro</title>
     <style>
-        :root { --primary: #6200ee; --secondary: #03dac6; --error: #b00020; --success: #4caf50; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 20px; }
-        h2 { color: var(--primary); text-align: center; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { opacity: 0.9; }
-        .opcoes-jogo { display: grid; gap: 10px; margin-top: 15px; }
-        .btn-opcao { background: #eee; color: #333; text-align: left; }
-        .correto { background: var(--success) !important; color: white; }
-        .errado { background: var(--error) !important; color: white; }
-        .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        :root { --primary: #1a73e8; --secondary: #34a853; --error: #ea4335; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 450px; margin-top: 20px; }
+        h2 { color: var(--primary); text-align: center; margin-top: 0; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; margin-top: 10px; }
+        button:active { transform: scale(0.98); }
         .hidden { display: none; }
-        .badge { background: var(--secondary); color: black; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        .btn-opcao { background: #f1f3f4; color: #3c4043; text-align: left; margin-bottom: 8px; border: 1px solid #dadce0; }
+        .badge { background: #e8f0fe; color: var(--primary); padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+        .feedback-area { text-align: center; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div id="tela-inicio" class="card">
-        <h2>O que deseja fazer?</h2>
-        <button onclick="mudarTela('tela-admin')">Criar Perguntas (Professor)</button>
-        <button onclick="mudarTela('tela-login-aluno')" style="background: var(--secondary); color: black;">Responder (Aluno)</button>
+        <h2>Quiz Master</h2>
+        <p style="text-align: center; color: #666;">Escolha seu perfil para continuar:</p>
+        <button onclick="mudarTela('tela-admin')">Painel do Professor</button>
+        <button onclick="mudarTela('tela-login-aluno')" style="background: var(--secondary);">Área do Aluno</button>
     </div>
 
     <div id="tela-admin" class="card hidden">
-        <button onclick="mudarTela('tela-inicio')" style="background: #666; width: auto; padding: 5px 15px;">← Voltar</button>
-        <h2>Painel do Professor</h2>
+        <button onclick="mudarTela('tela-inicio')" style="background: #5f6368; width: auto; padding: 8px 15px;">← Voltar</button>
+        <h2>Criar Pergunta</h2>
         <form id="form-pergunta">
-            <textarea id="perguntaTexto" placeholder="Digite a pergunta aqui..." required></textarea>
+            <textarea id="perguntaTexto" placeholder="Escreva a questão aqui..." required></textarea>
             <select id="tipoPergunta">
                 <option value="VF">Verdadeiro ou Falso</option>
                 <option value="AE">Múltipla Escolha (A-E)</option>
@@ -47,53 +45,60 @@
             </div>
             <label>Resposta Correta:</label>
             <select id="resCorreta"></select>
-            <button type="submit">Salvar Pergunta</button>
+            <button type="submit">Salvar no Banco de Dados</button>
         </form>
     </div>
 
     <div id="tela-login-aluno" class="card hidden">
-        <h2>Identifique-se</h2>
-        <input type="text" id="nomeAluno" placeholder="Seu nome completo">
-        <button id="btnEntrarQuiz">Entrar no Jogo</button>
+        <button onclick="mudarTela('tela-inicio')" style="background: #5f6368; width: auto; padding: 8px 15px;">← Voltar</button>
+        <h2>Entrar no Quiz</h2>
+        <input type="text" id="nomeAluno" placeholder="Digite seu nome completo">
+        <button id="btnEntrarQuiz">Iniciar Desafio</button>
     </div>
 
     <div id="tela-jogo" class="card hidden">
-        <div style="display: flex; justify-content: space-between;">
-            <span id="labelNome"></span>
-            <span id="labelPontos" class="badge">Pontos: 0</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <span id="labelNome" style="font-weight: bold; color: #5f6368;"></span>
+            <span id="labelPontos" class="badge">0 Pontos</span>
         </div>
-        <h3 id="displayPergunta">Carregando...</h3>
-        <div id="containerOpcoes" class="opcoes-jogo"></div>
-        <button id="btnProxima" class="hidden">Próxima Pergunta</button>
+        <h3 id="displayPergunta" style="margin-bottom: 20px;">Carregando...</h3>
+        <div id="containerOpcoes"></div>
+        <div id="feedback" class="feedback-area"></div>
+        <button id="btnProxima" class="hidden" style="background: #34a853;">Próxima Pergunta →</button>
     </div>
 
     <script type="module">
         import { db, collection, addDoc, onSnapshot, query, orderBy } from './firebase-config.js';
 
-        // --- LÓGICA DE NAVEGAÇÃO ---
+        // Torna a função global para os botões do HTML funcionarem
         window.mudarTela = (id) => {
             document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         };
 
-        // --- LÓGICA ADMIN ---
         const tipoP = document.getElementById('tipoPergunta');
         const resC = document.getElementById('resCorreta');
         const camposAE = document.getElementById('campos-ae');
 
+        // Atualiza as opções do gabarito dinamicamente
         const atualizarGabarito = () => {
             resC.innerHTML = "";
             if(tipoP.value === "VF") {
                 camposAE.classList.add('hidden');
-                ['Verdadeiro', 'Falso'].forEach(v => resC.innerHTML += `<option value="${v}">${v}</option>`);
+                ['Verdadeiro', 'Falso'].forEach(v => {
+                    resC.innerHTML += `<option value="${v}">${v}</option>`;
+                });
             } else {
                 camposAE.classList.remove('hidden');
-                ['A','B','C','D','E'].forEach(v => resC.innerHTML += `<option value="${v}">${v}</option>`);
+                ['A','B','C','D','E'].forEach(v => {
+                    resC.innerHTML += `<option value="${v}">${v}</option>`;
+                });
             }
         };
         tipoP.addEventListener('change', atualizarGabarito);
         atualizarGabarito();
 
+        // Salvar Pergunta
         document.getElementById('form-pergunta').addEventListener('submit', async (e) => {
             e.preventDefault();
             const novaP = {
@@ -110,11 +115,12 @@
                 };
             }
             await addDoc(collection(db, "quiz_perguntas"), novaP);
-            alert("Pergunta enviada aos alunos!");
+            alert("Pergunta salva com sucesso!");
             e.target.reset();
+            atualizarGabarito();
         });
 
-        // --- LÓGICA JOGO ---
+        // Lógica do Aluno
         let perguntas = [];
         let indexAtual = 0;
         let pontos = 0;
@@ -122,60 +128,67 @@
 
         document.getElementById('btnEntrarQuiz').addEventListener('click', () => {
             nomeUsuario = document.getElementById('nomeAluno').value;
-            if(!nomeUsuario) return alert("Diga seu nome!");
+            if(!nomeUsuario) return alert("Digite seu nome!");
             document.getElementById('labelNome').innerText = nomeUsuario;
-            mudarTela('tela-jogo');
-            carregarPerguntas();
-        });
-
-        function carregarPerguntas() {
+            window.mudarTela('tela-jogo');
+            
             const q = query(collection(db, "quiz_perguntas"), orderBy("data", "asc"));
             onSnapshot(q, (snap) => {
                 perguntas = snap.docs.map(d => d.data());
                 if(perguntas.length > 0) mostrarPergunta();
+                else document.getElementById('displayPergunta').innerText = "Aguardando perguntas do professor...";
             });
-        }
+        });
 
         function mostrarPergunta() {
             if(indexAtual >= perguntas.length) {
-                document.getElementById('displayPergunta').innerText = `Fim! Você fez ${pontos} pontos.`;
+                document.getElementById('displayPergunta').innerText = `🏆 Parabéns! Você concluiu com ${pontos} pontos.`;
                 document.getElementById('containerOpcoes').innerHTML = "";
+                document.getElementById('btnProxima').classList.add('hidden');
                 return;
             }
+            
             const p = perguntas[indexAtual];
             document.getElementById('displayPergunta').innerText = p.texto;
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('btnProxima').classList.add('hidden');
+            
             const container = document.getElementById('containerOpcoes');
             container.innerHTML = "";
-            document.getElementById('btnProxima').classList.add('hidden');
 
             const lista = p.tipo === "VF" ? ["Verdadeiro", "Falso"] : ["A","B","C","D","E"];
             lista.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "btn-opcao";
                 btn.innerText = p.tipo === "AE" ? `${opt}) ${p.opcoes[opt]}` : opt;
-                btn.onclick = () => validar(opt, p.correta, btn);
+                
+                btn.onclick = () => {
+                    const botoes = container.querySelectorAll('button');
+                    botoes.forEach(b => b.disabled = true);
+                    
+                    if(opt === p.correta) {
+                        btn.style.backgroundColor = "var(--secondary)";
+                        btn.style.color = "white";
+                        pontos += 10;
+                        document.getElementById('feedback').innerText = "✅ Resposta Correta!";
+                        document.getElementById('feedback').style.color = "var(--secondary)";
+                    } else {
+                        btn.style.backgroundColor = "var(--error)";
+                        btn.style.color = "white";
+                        document.getElementById('feedback').innerText = `❌ Errado! A correta era: ${p.correta}`;
+                        document.getElementById('feedback').style.color = "var(--error)";
+                    }
+                    document.getElementById('labelPontos').innerText = `${pontos} Pontos`;
+                    document.getElementById('btnProxima').classList.remove('hidden');
+                };
                 container.appendChild(btn);
             });
-        }
-
-        function validar(escolha, correta, btn) {
-            const todos = document.querySelectorAll('.btn-opcao');
-            todos.forEach(b => b.disabled = true);
-            if(escolha === correta) {
-                btn.classList.add('correto');
-                pontos += 10;
-                document.getElementById('labelPontos').innerText = `Pontos: ${pontos}`;
-            } else {
-                btn.classList.add('errado');
-            }
-            document.getElementById('btnProxima').classList.remove('hidden');
         }
 
         document.getElementById('btnProxima').addEventListener('click', () => {
             indexAtual++;
             mostrarPergunta();
         });
-
     </script>
 </body>
 </html>
