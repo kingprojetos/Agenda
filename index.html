@@ -1,151 +1,181 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Business PRO</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Quiz Gamificado</title>
     <style>
-        :root { --primary: #1a73e8; --success: #25d366; --danger: #ea4335; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
-        .navbar { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; }
-        .container { max-width: 500px; margin: auto; padding: 10px; }
-        .tabs-main { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .tabs-main button { flex: none; min-width: 100px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: #e0e0e0; }
-        .tabs-main button.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(26,115,232,0.3); }
-        .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        .btn-zap { background: var(--success); color: white; padding: 10px; border-radius: 50%; border: none; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
-        .time-row { display: flex; border-bottom: 1px solid #f0f0f0; min-height: 60px; }
-        .time-hour { width: 60px; font-weight: bold; color: var(--primary); padding-top: 10px; border-right: 1px solid #f0f0f0; }
-        .booked { background: #eef4ff; border-radius: 6px; padding: 8px; border-left: 4px solid var(--primary); font-size: 0.9rem; margin: 2px; flex: 1; display: flex; justify-content: space-between; align-items: center; }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .cal-day { padding: 12px 0; border-radius: 8px; font-size: 0.9rem; position: relative; cursor: pointer; background: #f1f1f1; }
-        .cal-day.selected { background: var(--primary) !important; color: white; }
-        .dot { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--danger); border-radius: 50%; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .main-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .search-res { border: 1px solid #eee; border-radius: 8px; max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
-        .search-row { padding: 10px; border-bottom: 1px solid #f9f9f9; cursor: pointer; }
+        :root { --primary: #6200ee; --secondary: #03dac6; --error: #b00020; --success: #4caf50; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 20px; }
+        h2 { color: var(--primary); text-align: center; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
+        .opcoes-jogo { display: grid; gap: 10px; margin-top: 15px; }
+        .btn-opcao { background: #eee; color: #333; text-align: left; }
+        .correto { background: var(--success) !important; color: white; }
+        .errado { background: var(--error) !important; color: white; }
+        .ranking-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .hidden { display: none; }
+        .badge { background: var(--secondary); color: black; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel">
-        function App() {
-            const [aba, setAba] = React.useState("hoje");
-            const [dataFiltro, setDataFiltro] = React.useState(new Date());
-            const [dataSelecionada, setDataSelecionada] = React.useState(new Date().toISOString().split('T')[0]);
-            const [clientes, setClientes] = React.useState([{id:1, nome:"Sophia", whatsapp:"991234567"}, {id:2, nome:"Suzy", whatsapp:"998765432"}]);
-            const [pacotes, setPacotes] = React.useState([{id:1, nome:"Make", valor:"150"}]);
-            const [agendamentos, setAgendamentos] = React.useState([
-                { id: 1, cliente: "Sophia", whatsapp: "991234567", servico: "Make", data: "2026-03-29", hora: "15:00" },
-                { id: 2, cliente: "Suzy", whatsapp: "998765432", servico: "Make", data: "2026-03-28", hora: "13:00" }
-            ]);
-            
-            const [busca, setBusca] = React.useState("");
-            const [cliSel, setCliSel] = React.useState(null);
-            const [fCli, setFCli] = React.useState({ nome: "", whatsapp: "" });
-            const [fPac, setFPac] = React.useState({ nome: "", valor: "" });
-            const [fAge, setFAge] = React.useState({ pacoteId: "", dataHora: "" });
 
-            const horasGrade = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
+    <div id="tela-inicio" class="card">
+        <h2>O que deseja fazer?</h2>
+        <button onclick="mudarTela('tela-admin')">Criar Perguntas (Professor)</button>
+        <button onclick="mudarTela('tela-login-aluno')" style="background: var(--secondary); color: black;">Responder (Aluno)</button>
+    </div>
 
-            const mudarMes = (offset) => setDataFiltro(new Date(dataFiltro.getFullYear(), dataFiltro.getMonth() + offset, 1));
+    <div id="tela-admin" class="card hidden">
+        <button onclick="mudarTela('tela-inicio')" style="background: #666; width: auto; padding: 5px 15px;">← Voltar</button>
+        <h2>Painel do Professor</h2>
+        <form id="form-pergunta">
+            <textarea id="perguntaTexto" placeholder="Digite a pergunta aqui..." required></textarea>
+            <select id="tipoPergunta">
+                <option value="VF">Verdadeiro ou Falso</option>
+                <option value="AE">Múltipla Escolha (A-E)</option>
+            </select>
+            <div id="campos-ae" class="hidden">
+                <input type="text" id="optA" placeholder="Opção A">
+                <input type="text" id="optB" placeholder="Opção B">
+                <input type="text" id="optC" placeholder="Opção C">
+                <input type="text" id="optD" placeholder="Opção D">
+                <input type="text" id="optE" placeholder="Opção E">
+            </div>
+            <label>Resposta Correta:</label>
+            <select id="resCorreta"></select>
+            <button type="submit">Salvar Pergunta</button>
+        </form>
+    </div>
 
-            return (
-                <div>
-                    <div className="navbar">AGENDA BUSINESS PRO</div>
-                    <div className="container">
-                        <div className="tabs-main">
-                            <button className={aba==='hoje'?'active':''} onClick={()=>setAba('hoje')}>Hoje</button>
-                            <button className={aba==='mensal'?'active':''} onClick={()=>setAba('mensal')}>Mensal</button>
-                            <button className={aba==='novo'?'active':''} onClick={()=>setAba('novo')}>+ Novo</button>
-                            <button className={aba==='pacotes'?'active':''} onClick={()=>setAba('pacotes')}>Pacotes</button>
-                        </div>
+    <div id="tela-login-aluno" class="card hidden">
+        <h2>Identifique-se</h2>
+        <input type="text" id="nomeAluno" placeholder="Seu nome completo">
+        <button id="btnEntrarQuiz">Entrar no Jogo</button>
+    </div>
 
-                        {aba === 'hoje' && (
-                            <div className="card">
-                                <h3>Grade: {dataSelecionada.split('-').reverse().join('/')}</h3>
-                                {horasGrade.map(h => (
-                                    <div key={h} className="time-row">
-                                        <div className="time-hour">{h}</div>
-                                        <div className="time-slot" style={{flex:1}}>
-                                            {agendamentos.filter(a => a.data === dataSelecionada && a.hora === h).map(ag => (
-                                                <div className="booked" key={ag.id}>
-                                                    <span><b>{ag.cliente}</b> - {ag.servico}</span>
-                                                    <a href={`https://wa.me/55${ag.whatsapp}`} className="btn-zap" style={{width:'30px', height:'30px', fontSize:'15px'}}>📱</a>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+    <div id="tela-jogo" class="card hidden">
+        <div style="display: flex; justify-content: space-between;">
+            <span id="labelNome"></span>
+            <span id="labelPontos" class="badge">Pontos: 0</span>
+        </div>
+        <h3 id="displayPergunta">Carregando...</h3>
+        <div id="containerOpcoes" class="opcoes-jogo"></div>
+        <button id="btnProxima" class="hidden">Próxima Pergunta</button>
+    </div>
 
-                        {aba === 'mensal' && (
-                            <div className="card">
-                                <div className="cal-header">
-                                    <button onClick={()=>mudarMes(-1)}>◀</button>
-                                    <h3 style={{textTransform:'capitalize'}}>{dataFiltro.toLocaleString('pt-br', { month: 'long', ano: 'numeric' })}</h3>
-                                    <button onClick={()=>mudarMes(1)}>▶</button>
-                                </div>
-                                <div className="cal-grid">
-                                    {['D','S','T','Q','Q','S','S'].map(d=><div key={d} style={{fontWeight:'bold', fontSize:'0.8rem'}}>{d}</div>)}
-                                    {Array(new Date(dataFiltro.getFullYear(), dataFiltro.getMonth(), 1).getDay()).fill(0).map((_,i)=><div key={i}></div>)}
-                                    {Array.from({length: new Date(dataFiltro.getFullYear(), dataFiltro.getMonth() + 1, 0).getDate()}, (_, i) => i + 1).map(dia => {
-                                        const dStr = `${dataFiltro.getFullYear()}-${String(dataFiltro.getMonth()+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-                                        return (
-                                            <div key={dia} className={`cal-day ${dataSelecionada === dStr ? 'selected' : ''}`} onClick={() => {setDataSelecionada(dStr); setAba('hoje');}}>
-                                                {dia}
-                                                {agendamentos.some(a => a.data === dStr) && <div className="dot"></div>}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+    <script type="module">
+        import { db, collection, addDoc, onSnapshot, query, orderBy } from './firebase-config.js';
 
-                        {aba === 'novo' && (
-                            <div className="card">
-                                <h3>Agendar / Cadastrar</h3>
-                                {!cliSel ? (
-                                    <><input placeholder="🔍 Buscar cliente..." value={busca} onChange={e=>setBusca(e.target.value)} />
-                                    <div className="search-res">{clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase())).map(c => (
-                                        <div className="search-row" key={c.id} onClick={()=>setCliSel(c)}>{c.nome}</div>
-                                    ))}</div></>
-                                ) : <div style={{background:'#eef4ff', padding:'10px', borderRadius:'8px', marginBottom:'10px'}}>Cliente: <b>{cliSel.nome}</b> <span onClick={()=>setCliSel(null)} style={{color:'red', cursor:'pointer', float:'right'}}>X</span></div>}
-                                <select onChange={e=>{const p=pacotes.find(x=>x.id==e.target.value); setFAge({...fAge, pacoteId: e.target.value, servico: p?.nome, valor: p?.valor})}}><option>Selecione o Pacote</option>{pacotes.map(p => <option key={p.id} value={p.id}>{p.nome} - R${p.valor}</option>)}</select>
-                                <input type="datetime-local" onChange={e=>{const [d, t]=e.target.value.split('T'); setFAge({...fAge, data: d, hora: t.substring(0,5)})}} />
-                                <button className="main-btn" onClick={()=>{setAgendamentos([...agendamentos, {id:Date.now(), cliente:cliSel.nome, whatsapp:cliSel.whatsapp, ...fAge}]); setAba("hoje"); alert("Agendado!")}}>SALVAR AGENDAMENTO</button>
-                                <hr style={{margin:'20px 0'}}/>
-                                <input placeholder="Nome do Cliente" value={fCli.nome} onChange={e=>setFCli({...fCli, nome:e.target.value})} />
-                                <input placeholder="WhatsApp" value={fCli.whatsapp} onChange={e=>setFCli({...fCli, whatsapp:e.target.value})} />
-                                <button className="main-btn" style={{background:'#25d366'}} onClick={()=>{setClientes([...clientes, {id:Date.now(), ...fCli}]); setFCli({nome:"", whatsapp:""}); alert("Cadastrado!")}}>CADASTRAR CLIENTE</button>
-                            </div>
-                        )}
+        // --- LÓGICA DE NAVEGAÇÃO ---
+        window.mudarTela = (id) => {
+            document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
 
-                        {aba === 'pacotes' && (
-                            <div className="card">
-                                <h3>Meus Pacotes</h3>
-                                <input placeholder="Ex: Maquiagem" value={fPac.nome} onChange={e=>setFPac({...fPac, nome:e.target.value})} />
-                                <input placeholder="Valor" type="number" value={fPac.valor} onChange={e=>setFPac({...fPac, valor:e.target.value})} />
-                                <button className="main-btn" onClick={()=>{setPacotes([...pacotes, {id:Date.now(), ...fPac}]); setFPac({nome:"", valor:""})}}>ADICIONAR</button>
-                                {pacotes.map(p => (
-                                    <div key={p.id} style={{display:'flex', justifyContent:'space-between', padding:'10px', borderBottom:'1px solid #eee'}}>
-                                        <span>{p.nome} - R$ {p.valor}</span>
-                                        <button onClick={()=>setPacotes(pacotes.filter(x=>x.id!==p.id))} style={{background:'red', color:'white', border:'none', padding:'5px', borderRadius:'4px'}}>X</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
+        // --- LÓGICA ADMIN ---
+        const tipoP = document.getElementById('tipoPergunta');
+        const resC = document.getElementById('resCorreta');
+        const camposAE = document.getElementById('campos-ae');
+
+        const atualizarGabarito = () => {
+            resC.innerHTML = "";
+            if(tipoP.value === "VF") {
+                camposAE.classList.add('hidden');
+                ['Verdadeiro', 'Falso'].forEach(v => resC.innerHTML += `<option value="${v}">${v}</option>`);
+            } else {
+                camposAE.classList.remove('hidden');
+                ['A','B','C','D','E'].forEach(v => resC.innerHTML += `<option value="${v}">${v}</option>`);
+            }
+        };
+        tipoP.addEventListener('change', atualizarGabarito);
+        atualizarGabarito();
+
+        document.getElementById('form-pergunta').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const novaP = {
+                texto: document.getElementById('perguntaTexto').value,
+                tipo: tipoP.value,
+                correta: resC.value,
+                data: Date.now()
+            };
+            if(tipoP.value === "AE") {
+                novaP.opcoes = {
+                    A: document.getElementById('optA').value, B: document.getElementById('optB').value,
+                    C: document.getElementById('optC').value, D: document.getElementById('optD').value,
+                    E: document.getElementById('optE').value
+                };
+            }
+            await addDoc(collection(db, "quiz_perguntas"), novaP);
+            alert("Pergunta enviada aos alunos!");
+            e.target.reset();
+        });
+
+        // --- LÓGICA JOGO ---
+        let perguntas = [];
+        let indexAtual = 0;
+        let pontos = 0;
+        let nomeUsuario = "";
+
+        document.getElementById('btnEntrarQuiz').addEventListener('click', () => {
+            nomeUsuario = document.getElementById('nomeAluno').value;
+            if(!nomeUsuario) return alert("Diga seu nome!");
+            document.getElementById('labelNome').innerText = nomeUsuario;
+            mudarTela('tela-jogo');
+            carregarPerguntas();
+        });
+
+        function carregarPerguntas() {
+            const q = query(collection(db, "quiz_perguntas"), orderBy("data", "asc"));
+            onSnapshot(q, (snap) => {
+                perguntas = snap.docs.map(d => d.data());
+                if(perguntas.length > 0) mostrarPergunta();
+            });
         }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+        function mostrarPergunta() {
+            if(indexAtual >= perguntas.length) {
+                document.getElementById('displayPergunta').innerText = `Fim! Você fez ${pontos} pontos.`;
+                document.getElementById('containerOpcoes').innerHTML = "";
+                return;
+            }
+            const p = perguntas[indexAtual];
+            document.getElementById('displayPergunta').innerText = p.texto;
+            const container = document.getElementById('containerOpcoes');
+            container.innerHTML = "";
+            document.getElementById('btnProxima').classList.add('hidden');
+
+            const lista = p.tipo === "VF" ? ["Verdadeiro", "Falso"] : ["A","B","C","D","E"];
+            lista.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-opcao";
+                btn.innerText = p.tipo === "AE" ? `${opt}) ${p.opcoes[opt]}` : opt;
+                btn.onclick = () => validar(opt, p.correta, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function validar(escolha, correta, btn) {
+            const todos = document.querySelectorAll('.btn-opcao');
+            todos.forEach(b => b.disabled = true);
+            if(escolha === correta) {
+                btn.classList.add('correto');
+                pontos += 10;
+                document.getElementById('labelPontos').innerText = `Pontos: ${pontos}`;
+            } else {
+                btn.classList.add('errado');
+            }
+            document.getElementById('btnProxima').classList.remove('hidden');
+        }
+
+        document.getElementById('btnProxima').addEventListener('click', () => {
+            indexAtual++;
+            mostrarPergunta();
+        });
+
     </script>
 </body>
 </html>
